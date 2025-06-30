@@ -1,0 +1,151 @@
+/* 主题切换按钮样式 */
+.theme-toggle {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 20px !important;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 48px !important;
+}
+
+.theme-toggle.fixed {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1000;
+}
+
+/* 白天模式样式 */
+.theme-toggle.light {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #1a1a1a !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.theme-toggle.light:hover {
+  background: rgba(255, 255, 255, 1) !important;
+  color: #1890ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* 黑夜模式样式 */
+.theme-toggle.dark {
+  background: rgba(45, 55, 72, 0.9) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.theme-toggle.dark:hover {
+  background: rgba(45, 55, 72, 1) !important;
+  color: #40a9ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* 图标动画 */
+.theme-toggle .anticon {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .anticon {
+  transform: rotate(15deg);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .theme-toggle {
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px !important;
+    font-size: 12px;
+  }
+  
+  .theme-toggle span:not(.anticon) {
+    display: none;
+  }
+}
+
+/* 动画效果 */
+@keyframes themeToggleIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.theme-toggle {
+  animation: themeToggleIn 0.5s ease-out;
+}
+
+/* 主题切换时的过渡效果 */
+.theme-toggle.switching {
+  transform: scale(0.95);
+}
+
+.theme-toggle.switching .anticon {
+  transform: rotate(180deg);
+}
+
+/* 隐藏和展开状态样式 */
+
+/* 固定定位的collapsed状态 - 按钮部分隐藏在屏幕右侧 */
+.theme-toggle.fixed.collapsed {
+  right: -30px; /* 只露出一小部分 */
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+/* 固定定位的expanded状态 - 按钮完全显示 */
+.theme-toggle.fixed.expanded {
+  right: 20px;
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+/* 悬停时展开效果 */
+.theme-toggle.fixed.collapsed:hover {
+  right: 20px;
+  opacity: 1;
+}
+
+/* 确保所有页面都使用collapsed状态作为默认状态 */
+.theme-toggle.fixed {
+  right: -30px;
+  opacity: 0.8;
+}
+
+.theme-toggle.fixed:hover {
+  right: 20px;
+  opacity: 1;
+}
+
+/* 添加视觉指示器 */
+.theme-toggle.fixed.collapsed::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  background: currentColor;
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.theme-toggle.fixed.collapsed:hover::before {
+  opacity: 0;
+}

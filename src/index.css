@@ -1,0 +1,402 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 重置默认样式，确保占满屏幕 */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+/* 全局变量 */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 全局主题样式 */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: all 0.3s ease;
+}
+
+/* 白天模式 */
+body.light {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* 黑夜模式 */
+body.dark {
+  background-color: #1a1a1a;
+  color: #e5e7eb;
+}
+
+/* 链接样式 */
+a {
+  font-weight: 500;
+  color: #1890ff;
+  text-decoration: inherit;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #40a9ff;
+}
+
+/* 标题样式 */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.5em;
+}
+
+h2 {
+  font-size: 2em;
+}
+
+h3 {
+  font-size: 1.5em;
+}
+
+/* 按钮基础样式 */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Ant Design 样式覆盖 */
+.ant-layout {
+  background: transparent !important;
+}
+
+.ant-card {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* 黑夜模式下的Ant Design组件 */
+body.dark .ant-card {
+  background: rgba(45, 45, 65, 0.9) !important;
+  border-color: rgba(75, 85, 99, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark .ant-card .ant-card-head {
+  background: rgba(45, 45, 65, 0.9) !important;
+  border-bottom-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+body.dark .ant-card .ant-card-head-title {
+  color: #e5e7eb !important;
+}
+
+body.dark .ant-card .ant-card-body {
+  background: rgba(45, 45, 65, 0.9) !important;
+  color: #f9fafb !important;
+}
+
+body.dark .ant-input {
+  background-color: rgba(75, 85, 99, 0.2) !important;
+  border-color: rgba(75, 85, 99, 0.4) !important;
+  color: #e5e7eb !important;
+}
+
+body.dark .ant-input::placeholder {
+  color: rgba(156, 163, 175, 0.8) !important;
+}
+
+body.dark .ant-input:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+body.dark .ant-menu {
+  background: transparent !important;
+}
+
+body.dark .ant-menu-item {
+  color: rgba(229, 231, 235, 0.85) !important;
+}
+
+body.dark .ant-menu-item:hover {
+  background-color: rgba(75, 85, 99, 0.2) !important;
+  color: #e5e7eb !important;
+}
+
+body.dark .ant-menu-item-selected {
+  background-color: #1890ff !important;
+  color: #e5e7eb !important;
+}
+
+body.dark .ant-list-item {
+  border-bottom-color: #4a5568 !important;
+}
+
+body.dark .ant-list-item-meta-title a {
+  color: #e5e7eb !important;
+}
+
+body.dark .ant-list-item-meta-description {
+  color: rgba(156, 163, 175, 0.9) !important;
+}
+
+body.dark .ant-statistic-title {
+  color: rgba(229, 231, 235, 0.85) !important;
+}
+
+/* 按钮样式 */
+.ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4) !important;
+}
+
+.ant-input {
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-input:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+body.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+body.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .ant-card {
+    margin: 0 8px !important;
+  }
+  
+  .ant-layout-sider {
+    position: fixed !important;
+    z-index: 1000 !important;
+    height: 100vh !important;
+  }
+  
+  h1 {
+    font-size: 2em;
+  }
+  
+  h2 {
+    font-size: 1.5em;
+  }
+  
+  h3 {
+    font-size: 1.2em;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+/* 主题色彩 */
+.theme-primary {
+  color: #1890ff;
+}
+
+.theme-success {
+  color: #52c41a;
+}
+
+.theme-warning {
+  color: #faad14;
+}
+
+.theme-error {
+  color: #f5222d;
+}
+
+/* 工具类 */
+.text-center {
+  text-align: center;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.align-center {
+  align-items: center;
+}
+
+.gap-1 {
+  gap: 8px;
+}
+
+.gap-2 {
+  gap: 16px;
+}
+
+.gap-3 {
+  gap: 24px;
+}
+
+.mb-1 {
+  margin-bottom: 8px;
+}
+
+.mb-2 {
+  margin-bottom: 16px;
+}
+
+.mb-3 {
+  margin-bottom: 24px;
+}
+
+.p-1 {
+  padding: 8px;
+}
+
+.p-2 {
+  padding: 16px;
+}
+
+.p-3 {
+  padding: 24px;
+}
+
+/* 过渡效果 */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.transition-colors {
+  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 阴影效果 */
+.shadow-sm {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-md {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-lg {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .shadow-sm {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+body.dark .shadow-md {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark .shadow-lg {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}

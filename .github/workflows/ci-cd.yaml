@@ -1,0 +1,56 @@
+# 工作流的名称
+name: React CI/CD Pipeline
+
+# 触发工作流的事件
+on:
+  push:
+    branches: [ "main" ] # 当推送到 main 分支时触发
+  pull_request:
+    branches: [ "main" ] # 当向 main 分支发起 Pull Request 时触发
+
+# 定义一个或多个作业 (job)
+jobs:
+  # 作业的唯一 ID
+  build-and-deploy:
+    # 作业的名称（显示在 GitHub UI 上）
+    name: Build and Deploy
+    # 作业运行的虚拟机环境
+    runs-on: ubuntu-latest
+
+    # 作业中的一系列步骤 (step)
+    steps:
+      # 第一步：检出代码
+      # 使用官方的 actions/checkout action 来获取你的仓库代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 第二步：设置 Node.js 环境
+      # 使用官方的 actions/setup-node action 来安装指定版本的 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22' # 指定 Node.js 版本
+          cache: 'npm'       # 缓存 npm 的依赖包，加快后续构建速度
+
+      # 第三步：安装依赖
+      # 使用 npm ci 而不是 npm install，它更快、更可靠，专门用于自动化环境
+      - name: Install dependencies
+        run: npm ci
+
+      # 第四步：运行测试
+      - name: Run tests
+        run: npm test
+
+      # 第五步：构建项目
+      # 这个命令会生成 build 目录
+      - name: Build project
+        run: npm run build
+
+      # 第六步：部署到 GitHub Pages
+      # 仅当代码推送到 main 分支时才执行此步骤
+      # - name: Deploy to GitHub Pages
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }} # GitHub 自动提供的 token
+      #     publish_dir: ./build                      # 指定要发布的目录（即我们的构建产物）

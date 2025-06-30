@@ -1,0 +1,445 @@
+.register-container {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* 背景样式 - 与登录页面保持一致 */
+.register-container.light {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
+}
+
+.register-container.dark {
+  background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+}
+
+/* 动态背景 - 使用与登录页面相同的粒子效果 */
+.register-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.register-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(2px 2px at 160px 30px, rgba(255,255,255,0.3), transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: particlesMove 20s linear infinite;
+}
+
+.register-waves {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z'%3E%3C/path%3E%3C/svg%3E") no-repeat;
+  background-size: cover;
+  opacity: 0.15;
+}
+
+/* 主题切换按钮 */
+.register-theme-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+}
+
+/* 内容区域 - 与登录页面保持一致 */
+.register-content {
+  position: relative;
+  z-index: 10;
+  padding: 24px;
+}
+
+.register-wrapper {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* 品牌区域 */
+.register-brand {
+  margin-bottom: 48px;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.register-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  margin-bottom: 24px;
+  box-shadow: 0 12px 40px rgba(82, 196, 26, 0.4);
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+.register-logo-icon {
+  font-size: 40px;
+  color: white;
+}
+
+.register-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.register-title.dark {
+  background: linear-gradient(135deg, #95de64 0%, #b7eb8f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.register-subtitle {
+  font-size: 1.2rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.register-subtitle.light {
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.register-subtitle.dark {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 注册卡片 - 与登录页面保持一致的尺寸 */
+.register-card {
+  border-radius: 28px !important;
+  padding: 48px 40px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: cardSlideUp 0.8s ease-out 0.2s both;
+  min-height: 520px;
+}
+
+.register-card.light {
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.register-card.dark {
+  background: rgba(26, 26, 46, 0.85) !important;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+}
+
+/* 表单样式 */
+.register-form {
+  text-align: left;
+}
+
+.register-label {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.register-label.light {
+  color: #1f2937;
+}
+
+.register-label.dark {
+  color: #f9fafb;
+}
+
+.register-input {
+  height: 52px !important;
+  border-radius: 14px !important;
+  border: 2px solid transparent !important;
+  transition: all 0.3s ease !important;
+  font-size: 16px !important;
+  padding: 14px 18px 14px 52px !important;
+}
+
+.register-input.light {
+  background: #f8fafc !important;
+  color: #1f2937 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.register-input.light:focus,
+.register-input.light:hover {
+  border-color: #52c41a !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.1) !important;
+}
+
+.register-input.dark {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.register-input.dark:focus,
+.register-input.dark:hover {
+  border-color: #95de64 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 0 0 4px rgba(149, 222, 100, 0.1) !important;
+}
+
+.register-input-icon {
+  font-size: 18px;
+  margin-left: 2px;
+}
+
+.register-input.light .register-input-icon {
+  color: #52c41a;
+}
+
+.register-input.dark .register-input-icon {
+  color: #95de64;
+}
+
+/* 密码强度 */
+.password-strength {
+  margin-bottom: 16px;
+}
+
+.password-strength-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.password-strength-text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.password-strength-text.light {
+  color: #64748b;
+}
+
+.password-strength-text.dark {
+  color: #94a3b8;
+}
+
+.password-strength-level {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 注册按钮 - 与登录页面保持一致的尺寸 */
+.register-button {
+  height: 52px !important;
+  border-radius: 14px !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%) !important;
+  border: none !important;
+  box-shadow: 0 10px 30px rgba(82, 196, 26, 0.4) !important;
+  transition: all 0.3s ease !important;
+  margin-top: 8px;
+}
+
+.register-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 15px 40px rgba(82, 196, 26, 0.5) !important;
+}
+
+.register-button:active {
+  transform: translateY(0) !important;
+}
+
+/* 分割线 */
+.register-divider {
+  position: relative;
+  text-align: center;
+  margin: 28px 0;
+}
+
+.register-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.15), transparent);
+}
+
+.register-divider-text {
+  background: inherit;
+  padding: 0 20px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.register-divider-text.light {
+  color: #64748b;
+}
+
+.register-divider-text.dark {
+  color: #94a3b8;
+}
+
+/* 页脚 */
+.register-footer {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.register-footer-text {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.register-footer-text.light {
+  color: #64748b;
+}
+
+.register-footer-text.dark {
+  color: #94a3b8;
+}
+
+.register-link {
+  color: #52c41a !important;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.register-link:hover {
+  color: #73d13d !important;
+  text-decoration: underline;
+}
+
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes particlesMove {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100px);
+  }
+}
+
+/* 响应式设计 - 与登录页面保持一致 */
+@media (max-width: 768px) {
+  .register-content {
+    padding: 16px;
+  }
+  
+  .register-wrapper {
+    max-width: 100%;
+  }
+  
+  .register-brand {
+    margin-bottom: 36px;
+  }
+  
+  .register-title {
+    font-size: 2.2rem;
+  }
+  
+  .register-card {
+    padding: 36px 28px;
+    border-radius: 24px !important;
+    min-height: 480px;
+  }
+  
+  .register-logo {
+    width: 75px;
+    height: 75px;
+    margin-bottom: 20px;
+  }
+  
+  .register-logo-icon {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-title {
+    font-size: 1.9rem;
+  }
+  
+  .register-subtitle {
+    font-size: 1.05rem;
+  }
+  
+  .register-card {
+    padding: 28px 24px;
+    min-height: 450px;
+  }
+  
+  .register-input {
+    height: 48px !important;
+    font-size: 15px !important;
+  }
+  
+  .register-button {
+    height: 48px !important;
+    font-size: 16px !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .register-wrapper {
+    max-width: 580px;
+  }
+  
+  .register-card {
+    padding: 56px 48px;
+    min-height: 580px;
+  }
+}

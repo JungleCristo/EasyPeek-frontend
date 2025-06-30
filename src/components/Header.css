@@ -1,0 +1,165 @@
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 暗色主题样式 */
+.header.dark {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.header-content {
+  max-width: 1800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 64px;
+  position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.logo-icon {
+  margin-right: 8px;
+  font-size: 28px;
+}
+
+.logo-text {
+  color: white;
+}
+
+.header.dark .logo-text {
+  color: #e5e7eb;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.header.dark .nav-link {
+  color: #d1d5db;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.header.dark .nav-link:hover {
+  background: rgba(139, 92, 246, 0.2);
+  color: #e5e7eb;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-btn,
+.logout-btn {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.header.dark .profile-btn,
+.header.dark .logout-btn {
+  background: rgba(139, 92, 246, 0.2);
+  color: #e5e7eb;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.profile-btn:hover,
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header.dark .profile-btn:hover,
+.header.dark .logout-btn:hover {
+  background: rgba(139, 92, 246, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0 16px;
+    height: 56px;
+    justify-content: space-between;
+  }
+  
+  .header-nav {
+    display: none;
+  }
+  
+  .logo {
+    font-size: 20px;
+  }
+  
+  .logo-icon {
+    font-size: 24px;
+  }
+  
+  .profile-btn,
+  .logout-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 0 12px;
+  }
+  
+  .header-right {
+    gap: 8px;
+  }
+  
+  .profile-btn,
+  .logout-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
