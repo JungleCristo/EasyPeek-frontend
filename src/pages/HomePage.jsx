@@ -9,7 +9,55 @@ import "./HomePage.css";
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
+  const [featuredNews, setFeaturedNews] = useState([]);
+  const [hotNews, setHotNews] = useState([]);
+  const [latestNews, setLatestNews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  // API调用函数
+  const fetchNews = async (endpoint, limit = 6) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/news${endpoint}?limit=${limit}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error(`Error fetching ${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // 获取所有新闻数据
+  const fetchAllNews = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [allNewsData, hotNewsData, latestNewsData] = await Promise.all([
+        fetchNews('', 6), // 获取全部新闻
+        fetchNews('/hot', 6), // 获取热门新闻
+        fetchNews('/latest', 6) // 获取最新新闻
+      ]);
+      
+      setFeaturedNews(allNewsData);
+      setHotNews(hotNewsData);
+      setLatestNews(latestNewsData);
+    } catch (error) {
+      setError('获取新闻数据失败，请稍后重试');
+      console.error('Error fetching news:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 组件挂载时获取数据
+  useEffect(() => {
+    fetchAllNews();
+  }, []);
 
   const events = [
     { 
@@ -56,69 +104,6 @@ export default function HomePage() {
     },
   ];
 
-  const [featuredNews, setFeaturedNews] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // 获取新闻数据
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const response = await fetch('http://localhost:8080/api/v1/news');
-        const result = await response.json();
-        
-        if (result.code === 200 && result.data) {
-          // 取前3条新闻作为特色新闻
-          setFeaturedNews(result.data.slice(0, 3));
-        }
-      } catch (err) {
-        console.error('获取新闻数据失败:', err);
-        // 如果API调用失败，使用默认数据
-        setFeaturedNews([
-          {
-            id: 1,
-            title: "科技巨头AI竞赛白热化，行业格局面临重大变革",
-            content: "OpenAI、Google、微软等科技巨头在人工智能领域展开激烈竞争，新产品发布频繁，投资规模扩大。",
-            summary: "OpenAI、Google、微软等科技巨头在人工智能领域展开激烈竞争，新产品发布频繁，投资规模扩大。",
-            source: "科技日报",
-            category: "科技",
-            published_at: "2024-01-15 10:30",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "AI技术发展",
-          },
-          {
-            id: 2,
-            title: "全球气候变化新进展：联合国气候大会达成重要共识",
-            content: "第28届联合国气候变化大会在迪拜闭幕，各国就减排目标和气候资金达成新的协议。",
-            summary: "第28届联合国气候变化大会在迪拜闭幕，各国就减排目标和气候资金达成新的协议。",
-            source: "环球时报",
-            category: "环境",
-            published_at: "2024-01-14 16:45",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "气候变会议",
-          },
-          {
-            id: 3,
-            title: "新能源汽车市场变革：传统车企加速转型",
-            content: "特斯拉、比亚迪等新能源车企持续领跑市场，传统汽车制造商纷纷加大电动化投入。",
-            summary: "特斯拉、比亚迪等新能源车企持续领跑市场，传统汽车制造商纷纷加大电动化投入。",
-            source: "汽车之家",
-            category: "汽车",
-            published_at: "2024-01-13 14:20",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "新能源汽车发展",
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNews();
-  }, []);
-
 
 
   const handlePrevNews = () => {
@@ -143,7 +128,37 @@ export default function HomePage() {
     navigate('/search');
   };
 
-  const currentNews = featuredNews[currentNewsIndex];
+  const currentNews = featuredNews.length > 0 ? featuredNews[currentNewsIndex] : null;
+
+  // 如果正在加载，显示加载状态
+  if (loading) {
+    return (
+      <div className="homepage-container">
+        <Header />
+        <div className="homepage-content">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>正在加载新闻数据...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果有错误，显示错误信息
+  if (error) {
+    return (
+      <div className="homepage-container">
+        <Header />
+        <div className="homepage-content">
+          <div className="error-container">
+            <p className="error-message">{error}</p>
+            <button onClick={fetchAllNews} className="retry-btn">重试</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="homepage-container">
@@ -186,36 +201,42 @@ export default function HomePage() {
             {/* 单独新闻展示 */}
             <div className="sidebar-card">
               <h3 className="card-title">今日焦点</h3>
-              <div className="single-news-container" onClick={() => handleNewsClick(currentNews.id)}>
-                <h4 className="single-news-title">{currentNews.title}</h4>
-                <p className="single-news-summary">{currentNews.summary}</p>
-                <div className="single-news-meta">
-                  <span className="single-news-time">{currentNews.published_at}</span>
-                  <span className="single-news-source">{currentNews.source}</span>
-                </div>
-                {/* 转换箭头 */}
-                <div className="news-navigation">
-                  <button className="nav-arrow prev-arrow" onClick={(e) => {
-                    e.stopPropagation();
-                    handlePrevNews();
-                  }}>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <div className="news-indicator">
-                    {currentNewsIndex + 1} / {featuredNews.length}
+              {currentNews ? (
+                <div className="single-news-container" onClick={() => handleNewsClick(currentNews.id)}>
+                  <h4 className="single-news-title">{currentNews.title}</h4>
+                  <p className="single-news-summary">{currentNews.summary || currentNews.description}</p>
+                  <div className="single-news-meta">
+                    <span className="single-news-time">{new Date(currentNews.published_at).toLocaleString()}</span>
+                    <span className="single-news-source">{currentNews.source}</span>
                   </div>
-                  <button className="nav-arrow next-arrow" onClick={(e) => {
-                    e.stopPropagation();
-                    handleNextNews();
-                  }}>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  {/* 转换箭头 */}
+                  <div className="news-navigation">
+                    <button className="nav-arrow prev-arrow" onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrevNews();
+                    }}>
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <div className="news-indicator">
+                      {currentNewsIndex + 1} / {featuredNews.length}
+                    </div>
+                    <button className="nav-arrow next-arrow" onClick={(e) => {
+                      e.stopPropagation();
+                      handleNextNews();
+                    }}>
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="no-news-message">
+                  <p>暂无新闻数据</p>
+                </div>
+              )}
             </div>
 
             {/* Events */}
@@ -252,18 +273,24 @@ export default function HomePage() {
             <div className="content-card">
               <div className="card-header">
                 <h2 className="card-title">全球最新动态</h2>
-                <p className="card-subtitle">当今最火热的新闻动态</p>
+                <p className="card-subtitle">最新发布的新闻资讯</p>
               </div>
               <div className="card-body">
                 <div className="news-grid">
-                  {featuredNews.map((news) => (
-                    <NewsCard 
-                      key={news.id} 
-                      news={news} 
-                      eventConfig={eventConfig} 
-                      onNewsClick={handleNewsClick} 
-                    />
-                  ))}
+                  {latestNews.length > 0 ? (
+                    latestNews.map((news) => (
+                      <NewsCard 
+                        key={news.id} 
+                        news={news} 
+                        eventConfig={eventConfig} 
+                        onNewsClick={handleNewsClick} 
+                      />
+                    ))
+                  ) : (
+                    <div className="no-news-message">
+                      <p>暂无最新新闻</p>
+                    </div>
+                  )}
                 </div>
                 <div className="card-footer">
                   <Link to="/global">
@@ -273,22 +300,28 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Featured News */}
+            {/* Hot News */}
             <div className="content-card">
               <div className="card-header">
-                <h2 className="card-title">为你推荐</h2>
-                <p className="card-subtitle">个性化推荐，为你提供最感兴趣的新闻</p>
+                <h2 className="card-title">热门推荐</h2>
+                <p className="card-subtitle">当前最热门的新闻话题</p>
               </div>
               <div className="card-body">
                 <div className="news-grid">
-                  {featuredNews.map((news) => (
-                    <NewsCard 
-                      key={news.id} 
-                      news={news} 
-                      eventConfig={eventConfig} 
-                      onNewsClick={handleNewsClick} 
-                    />
-                  ))}
+                  {hotNews.length > 0 ? (
+                    hotNews.map((news) => (
+                      <NewsCard 
+                        key={news.id} 
+                        news={news} 
+                        eventConfig={eventConfig} 
+                        onNewsClick={handleNewsClick} 
+                      />
+                    ))
+                  ) : (
+                    <div className="no-news-message">
+                      <p>暂无热门新闻</p>
+                    </div>
+                  )}
                 </div>
                 <div className="card-footer">
                   <Link to="/recommend">

@@ -20,8 +20,11 @@ const GlobalPage = () => {
     search: ''
   });
   const [isFilterChanged, setIsFilterChanged] = useState(false);
-  const [newsPerPage] = useState(3); // 每页显示3条新闻
+  const [newsPerPage] = useState(6); // 每页显示6条新闻
   const [timelineSortOrder, setTimelineSortOrder] = useState('desc'); // 时间线排序：desc-最新在前，asc-最早在前
+  const [globalNewsData, setGlobalNewsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   // 新闻分类数据
@@ -36,103 +39,87 @@ const GlobalPage = () => {
     { id: "sports", name: "体育", count: 156, color: "bg-orange-100" },
   ];
 
-  const [globalNewsData, setGlobalNewsData] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // 获取新闻数据
+  // 组件加载时获取新闻数据
   useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const response = await fetch('http://localhost:8080/api/v1/news');
-        const result = await response.json();
-        
-        if (result.code === 200 && result.data) {
-          setGlobalNewsData(result.data);
-        }
-      } catch (err) {
-        console.error('获取新闻数据失败:', err);
-        // 如果API调用失败，使用默认数据
-        setGlobalNewsData([
-          {
-            id: 1,
-            title: "全球气候变化新进展：联合国气候大会达成重要共识",
-            content: "第28届联合国气候变化大会在迪拜闭幕，各国就减排目标和气候资金达成新的协议，为全球应对气候变化提供了新的路径。",
-            summary: "第28届联合国气候变化大会在迪拜闭幕，各国就减排目标和气候资金达成新的协议，为全球应对气候变化提供了新的路径。",
-            source: "环球时报",
-            category: "环境",
-            published_at: "2024-01-15 10:30",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "气候变化会议",
-          },
-          {
-            id: 2,
-            title: "美国大选最新动态：两党候选人展开激烈辩论",
-            content: "美国总统大选进入关键阶段，民主党和共和党候选人在全国电视辩论中就经济、外交、医疗等议题展开激烈交锋。",
-            summary: "美国总统大选进入关键阶段，民主党和共和党候选人在全国电视辩论中就经济、外交、医疗等议题展开激烈交锋。",
-            source: "CNN",
-            category: "政治",
-            published_at: "2024-01-14 16:45",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "美国大选",
-          },
-          {
-            id: 3,
-            title: "欧洲央行宣布新的货币政策措施",
-            content: "欧洲央行在最新会议上宣布调整利率政策，并推出新的量化宽松措施以应对经济下行压力。",
-            summary: "欧洲央行在最新会议上宣布调整利率政策，并推出新的量化宽松措施以应对经济下行压力。",
-            source: "路透社",
-            category: "经济",
-            published_at: "2024-01-13 14:20",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "欧洲经济政策",
-          },
-          {
-            id: 4,
-            title: "日本福岛核电站处理水排放引发国际关注",
-            content: "日本政府开始向海洋排放福岛核电站处理水，引发周边国家和国际社会的广泛关注和争议。",
-            summary: "日本政府开始向海洋排放福岛核电站处理水，引发周边国家和国际社会的广泛关注和争议。",
-            source: "日本时报",
-            category: "环境",
-            published_at: "2024-01-12 09:15",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "福岛核电站",
-          },
-          {
-            id: 5,
-            title: "印度成功发射月球探测器",
-            content: "印度空间研究组织成功发射月球探测器，计划在月球南极着陆，这将使印度成为第四个实现月球软着陆的国家。",
-            summary: "印度空间研究组织成功发射月球探测器，计划在月球南极着陆，这将使印度成为第四个实现月球软着陆的国家。",
-            source: "印度时报",
-            category: "科技",
-            published_at: "2024-01-11 11:30",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "太空探索",
-          },
-          {
-            id: 6,
-            title: "巴西雨林保护新政策出台",
-            content: "巴西政府宣布新的雨林保护政策，加强亚马逊雨林的保护力度，并承诺到2030年实现零毁林目标。",
-            summary: "巴西政府宣布新的雨林保护政策，加强亚马逊雨林的保护力度，并承诺到2030年实现零毁林目标。",
-            source: "巴西环球报",
-            category: "环境",
-            published_at: "2024-01-10 15:45",
-            created_by: 1,
-            is_active: true,
-            belonged_event: "雨林保护",
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNews();
+    fetchGlobalNews();
   }, []);
+
+  // 当分类改变时重新获取数据
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      fetchGlobalNews();
+    } else {
+      fetchNewsByCategory(selectedCategory);
+    }
+  }, [selectedCategory]);
+
+  // 从后端API获取新闻数据
+  const fetchGlobalNews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8080/api/v1/news/latest?limit=50');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.code === 200 && result.data) {
+        setGlobalNewsData(result.data);
+        setError(null);
+      } else {
+        throw new Error(result.message || '获取新闻数据失败');
+      }
+    } catch (error) {
+      console.error('获取新闻数据失败:', error);
+      setError('获取新闻数据失败，请稍后重试');
+      setGlobalNewsData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 根据分类获取新闻数据
+  const fetchNewsByCategory = async (category) => {
+    try {
+      setLoading(true);
+      let url = 'http://localhost:8080/api/v1/news/latest?limit=50';
+      
+      if (category !== 'all') {
+        const categoryMap = {
+          'tech': '科技',
+          'politics': '政治', 
+          'economy': '经济',
+          'environment': '环境',
+          'health': '医疗',
+          'education': '教育',
+          'sports': '体育'
+        };
+        const categoryName = categoryMap[category];
+        if (categoryName) {
+          url = `http://localhost:8080/api/v1/news/category/${encodeURIComponent(categoryName)}?limit=50`;
+        }
+      }
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.code === 200 && result.data) {
+        setGlobalNewsData(result.data);
+        setError(null);
+      } else {
+        throw new Error(result.message || '获取新闻数据失败');
+      }
+    } catch (error) {
+      console.error('获取分类新闻失败:', error);
+      setError('获取新闻数据失败，请稍后重试');
+      setGlobalNewsData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 所属事件配置 - 复用HomePage.jsx的配置方式
   const eventConfig = {
@@ -609,17 +596,49 @@ const GlobalPage = () => {
                 </div>
               </div>
 
-              {/* 新闻内容 */}
-              {currentView === 'grid' && renderGridView()}
-              {currentView === 'list' && renderListView()}
-              {currentView === 'timeline' && renderTimelineView()}
-
-              {/* 空状态显示 */}
-              {filteredAndSortedNews.length === 0 && (
-                <div className="no-news-results">
-                  <h3>暂无符合条件的新闻</h3>
-                  <p>请尝试调整筛选条件</p>
+              {/* 加载状态 */}
+              {loading && (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <p>正在加载新闻...</p>
                 </div>
+              )}
+
+              {/* 错误状态 */}
+              {error && (
+                <div className="error-container">
+                  <h3>加载失败</h3>
+                  <p>{error}</p>
+                  <button 
+                    className="retry-button"
+                    onClick={() => {
+                      if (selectedCategory === 'all') {
+                        fetchGlobalNews();
+                      } else {
+                        fetchNewsByCategory(selectedCategory);
+                      }
+                    }}
+                  >
+                    重试
+                  </button>
+                </div>
+              )}
+
+              {/* 新闻内容 */}
+              {!loading && !error && (
+                <>
+                  {currentView === 'grid' && renderGridView()}
+                  {currentView === 'list' && renderListView()}
+                  {currentView === 'timeline' && renderTimelineView()}
+
+                  {/* 空状态显示 */}
+                  {filteredAndSortedNews.length === 0 && (
+                    <div className="no-news-results">
+                      <h3>暂无符合条件的新闻</h3>
+                      <p>请尝试调整筛选条件</p>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* 分页 */}

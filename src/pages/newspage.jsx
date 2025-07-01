@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
@@ -9,78 +9,90 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newsData, setNewsData] = useState(null);
+  const [relatedNews, setRelatedNews] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
 
-  // 事件时间线数据
-  const timeline = [
-    {
-      date: "2024-01-10",
-      time: "09:00",
-      title: "OpenAI发布GPT-5预告",
-      content: "OpenAI在开发者大会上首次展示GPT-5的部分能力，引发行业关注",
-      importance: "high",
-      sources: ["TechCrunch", "The Verge"],
-    },
-    {
-      date: "2024-01-12",
-      time: "14:30",
-      title: "Google回应竞争压力",
-      content: "Google CEO在内部会议中表示将加大AI投入，Bard团队扩招50%",
-      importance: "medium",
-      sources: ["Reuters", "Bloomberg"],
-    },
-    {
-      date: "2024-01-13",
-      time: "16:45",
-      title: "微软宣布新投资计划",
-      content: "微软宣布向OpenAI追加投资100亿美元，深化战略合作关系",
-      importance: "high",
-      sources: ["WSJ", "Financial Times"],
-    },
-    {
-      date: "2024-01-14",
-      time: "11:20",
-      title: "Meta推出Llama 3",
-      content: "Meta正式发布Llama 3大语言模型，声称在多项基准测试中超越竞品",
-      importance: "high",
-      sources: ["Meta官方", "AI News"],
-    },
-    {
-      date: "2024-01-15",
-      time: "10:30",
-      title: "行业分析师发声",
-      content: "多位行业分析师认为AI竞赛进入白热化阶段，预计将重塑科技行业格局",
-      importance: "medium",
-      sources: ["McKinsey", "Gartner"],
-    },
-  ];
 
-  // 相关新闻数据
-  const relatedNews = [
-    { 
-      id: 2, 
-      title: "AI芯片需求激增，英伟达股价创新高", 
-      category: "科技",
-      source: "财经网",
-      published_at: "2024-01-14 15:30",
-      summary: "AI芯片市场需求激增，英伟达股价创历史新高"
-    },
-    { 
-      id: 3, 
-      title: "欧盟AI法案正式生效，科技公司面临新挑战", 
-      category: "政策",
-      source: "环球时报",
-      published_at: "2024-01-13 12:20",
-      summary: "欧盟AI监管法案正式生效，对科技公司提出新的合规要求"
-    },
-    { 
-      id: 4, 
-      title: "中国AI企业加速出海，寻求国际合作", 
-      category: "商业",
-      source: "经济观察报",
-      published_at: "2024-01-12 09:15",
-      summary: "中国AI企业积极拓展海外市场，寻求更多国际合作机会"
-    },
-  ];
+  // 格式化新闻数据，处理字段映射
+  const formatNewsData = (rawData) => {
+    if (!rawData) return null;
+    
+    return {
+      ...rawData,
+      // 处理字段映射
+      readCount: rawData.view_count || 0,
+      likeCount: rawData.like_count || 0,
+      commentCount: rawData.comment_count || 0,
+      followCount: rawData.follow_count || 0,
+      tags: Array.isArray(rawData.tags) ? rawData.tags : (rawData.tags ? rawData.tags.split(',').map(tag => tag.trim()) : []),
+      aiPrediction: rawData.ai_prediction || "暂无AI预测分析",
+      // 格式化时间
+      published_at: rawData.published_at ? new Date(rawData.published_at).toLocaleString('zh-CN') : '',
+    };
+  };
+
+  // 格式化相关新闻数据
+  const formatRelatedNews = (newsList) => {
+    return newsList.map(news => ({
+      ...news,
+      published_at: news.published_at ? new Date(news.published_at).toLocaleString('zh-CN') : ''
+    }));
+  };
+
+ 
+
+  // 获取相关新闻 - 基于标签推荐
+  const fetchRelatedNews = async (newsId, currentNewsTags) => {
+    try {
+      setRelatedLoading(true);
+      // 获取更多新闻用于筛选
+      const response = await fetch(`http://localhost:8080/api/v1/news/latest?limit=50`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (result.code === 200 && result.data) {
+        // 过滤掉当前新闻
+        const filtered = result.data.filter(news => news.id !== parseInt(newsId));
+        
+        // 如果当前新闻有标签，基于标签推荐
+        if (currentNewsTags && currentNewsTags.length > 0) {
+          const relatedByTags = filtered.filter(news => {
+            if (!news.tags) return false;
+            const newsTags = Array.isArray(news.tags) ? news.tags : news.tags.split(',').map(tag => tag.trim());
+            // 检查是否有共同标签
+            return newsTags.some(tag => currentNewsTags.includes(tag));
+          });
+          
+          // 按共同标签数量排序
+          relatedByTags.sort((a, b) => {
+            const aTagsArray = Array.isArray(a.tags) ? a.tags : a.tags.split(',').map(tag => tag.trim());
+            const bTagsArray = Array.isArray(b.tags) ? b.tags : b.tags.split(',').map(tag => tag.trim());
+            const aCommonTags = aTagsArray.filter(tag => currentNewsTags.includes(tag)).length;
+            const bCommonTags = bTagsArray.filter(tag => currentNewsTags.includes(tag)).length;
+            return bCommonTags - aCommonTags;
+          });
+          
+          // 如果有基于标签的相关新闻，优先使用
+          if (relatedByTags.length > 0) {
+            const formattedRelated = formatRelatedNews(relatedByTags.slice(0, 3));
+            setRelatedNews(formattedRelated);
+            return;
+          }
+        }
+        
+        // 如果没有标签或没有找到相关标签的新闻，则按时间推荐
+        const formattedRelated = formatRelatedNews(filtered.slice(0, 3));
+        setRelatedNews(formattedRelated);
+      }
+    } catch (error) {
+      console.error('获取相关新闻失败:', error);
+      setRelatedNews([]);
+    } finally {
+      setRelatedLoading(false);
+    }
+  };
 
   // 所属事件配置
   const eventConfig = {
@@ -90,30 +102,33 @@ export default function NewsPage() {
   };
 
   useEffect(() => {
-    // 从新API获取新闻数据
+
+    // 从后端API获取新闻详情
+
     const fetchNewsData = async () => {
       try {
         setLoading(true);
-        
-        // 从新接口获取新闻列表，然后根据ID筛选
-        const response = await fetch('http://localhost:8080/api/v1/news');
-        const result = await response.json();
-        
-        if (result.code === 200 && result.data) {
-          // 根据ID查找对应的新闻
-          const targetNews = result.data.find(news => news.id === parseInt(id));
-          
-          if (targetNews) {
-            setNewsData(targetNews);
-            setError(null);
-          } else {
-            setError("新闻不存在");
-          }
-        } else {
-          setError("获取新闻数据失败");
+
+        // 调用后端API获取新闻详情
+        const response = await fetch(`http://localhost:8080/api/v1/news/${id}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      } catch (err) {
-        console.error('获取新闻数据失败:', err);
+        
+        const result = await response.json();
+         if (result.code === 200 && result.data) {
+           const formattedData = formatNewsData(result.data);
+           setNewsData(formattedData);
+           setError(null);
+           // 获取相关新闻 - 传入当前新闻的标签
+           fetchRelatedNews(id, formattedData.tags);
+         } else {
+           throw new Error(result.message || '获取新闻详情失败');
+         }
+      } catch (error) {
+        console.error('获取新闻详情失败:', error);
+
+ 
         setError("获取新闻详情失败，请稍后重试");
       } finally {
         setLoading(false);
@@ -196,16 +211,15 @@ export default function NewsPage() {
                   <div className="news-category-badge">
                     {newsData.category}
                   </div>
-                  {newsData.image_url && (
-                    <div className="news-image-container">
-                      <img 
-                        src={newsData.image_url} 
-                        alt={newsData.title}
-                        className="news-header-image"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
+
+                  {newsData.belonged_event && (
+                    <div 
+                      className="news-event-badge"
+                      style={{
+                        backgroundColor: eventConfig[newsData.belonged_event]?.bgColor || "rgba(107, 114, 128, 0.9)"
+                      }}
+                    >
+                      {eventConfig[newsData.belonged_event]?.label || newsData.belonged_event}
                     </div>
                   )}
                 </div>
@@ -268,83 +282,139 @@ export default function NewsPage() {
                 <h2 className="card-title">📰 新闻内容</h2>
               </div>
               <div className="card-body">
+                {/* 新闻图片 */}
+                {newsData.image_url && (
+                  <div className="news-image-container">
+                    <img 
+                      src={newsData.image_url} 
+                      alt={newsData.title}
+                      className="news-image"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+                
                 <div className="news-content">
-                  {newsData.content}
+                  {newsData.content && newsData.content.split('\n').map((paragraph, index) => {
+                    // 检查段落是否包含图片链接
+                    const imageUrlRegex = /https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg)(\?[^\s]*)?/gi;
+                    const imageUrls = paragraph.match(imageUrlRegex);
+                    
+                    if (imageUrls && imageUrls.length > 0) {
+                      // 如果段落包含图片链接，渲染图片
+                      return (
+                        <div key={index} className="paragraph-with-images">
+                          {imageUrls.map((imageUrl, imgIndex) => (
+                            <div key={imgIndex} className="embedded-image-container">
+                              <img 
+                                src={imageUrl.trim()} 
+                                alt={`新闻图片 ${imgIndex + 1}`}
+                                className="embedded-news-image"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                                onLoad={(e) => {
+                                  e.target.style.display = 'block';
+                                }}
+                              />
+                            </div>
+                          ))}
+                          {/* 显示去除图片链接后的文本 */}
+                          {paragraph.replace(imageUrlRegex, '').trim() && (
+                            <p className="news-paragraph">
+                              {paragraph.replace(imageUrlRegex, '').trim()}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    } else {
+                      // 普通文本段落
+                      return (
+                        <p key={index} className="news-paragraph">
+                          {paragraph}
+                        </p>
+                      );
+                    }
+                  })}
                 </div>
                 
                 {/* 标签区域 */}
-                {newsData.tags && (
+
+                {newsData.tags && Array.isArray(newsData.tags) && newsData.tags.length > 0 && (
                   <div className="news-tags-section">
                     <span className="tags-label">相关标签：</span>
                     <div className="tags-container">
-                      {parseTags(newsData.tags).map((tag, index) => (
+                      {newsData.tags.map((tag, index) => (
                         <span key={index} className="tag">{tag}</span>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {/* 原文链接 */}
-                {newsData.link && (
-                  <div className="original-link-section">
-                    <span className="link-label">原文链接：</span>
-                    <a 
-                      href={newsData.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="original-link"
-                    >
-                      {newsData.source} - 查看原文
-                    </a>
                   </div>
                 )}
               </div>
             </div>
 
             {/* 事件时间线 */}
-            <div className="content-card">
-              <div className="card-header">
-                <h2 className="card-title">📅 事件时间线</h2>
-                <p className="card-subtitle">完整追踪事件发展过程</p>
-              </div>
-              <div className="card-body">
-                <div className="timeline-container">
-                  {timeline.map((event, index) => (
-                    <div key={index} className="timeline-item">
-                      <div className="timeline-connector">
-                        <div className="timeline-dot">
-                          {index + 1}
-                        </div>
-                        {index !== timeline.length - 1 && (
-                          <div className="timeline-line"></div>
-                        )}
-                      </div>
-                      
-                      <div className="timeline-content">
-                        <div className="timeline-header">
-                          <span className="timeline-date">{event.date} {event.time}</span>
-                          <span className={`timeline-importance ${event.importance}`}>
-                            {event.importance === "high" ? "重要" : "一般"}
-                          </span>
-                        </div>
-                        
-                        <h4 className="timeline-title">{event.title}</h4>
-                        <p className="timeline-description">{event.content}</p>
-                        
-                        <div className="timeline-sources">
-                          <span className="sources-label">消息来源：</span>
-                          <div className="sources-tags">
-                            {event.sources.map((source, idx) => (
-                              <span key={idx} className="source-tag">{source}</span>
-                            ))}
+            {newsData.timeline && newsData.timeline.length > 0 ? (
+              <div className="content-card">
+                <div className="card-header">
+                  <h2 className="card-title">📅 事件时间线</h2>
+                  <p className="card-subtitle">完整追踪事件发展过程</p>
+                </div>
+                <div className="card-body">
+                  <div className="timeline-container">
+                    {newsData.timeline.map((event, index) => (
+                      <div key={index} className="timeline-item">
+                        <div className="timeline-connector">
+                          <div className="timeline-dot">
+                            {index + 1}
                           </div>
+                          {index !== newsData.timeline.length - 1 && (
+                            <div className="timeline-line"></div>
+                          )}
+                        </div>
+                        
+                        <div className="timeline-content">
+                          <div className="timeline-header">
+                            <span className="timeline-date">{event.date} {event.time}</span>
+                            <span className={`timeline-importance ${event.importance}`}>
+                              {event.importance === "high" ? "重要" : "一般"}
+                            </span>
+                          </div>
+                          
+                          <h4 className="timeline-title">{event.title}</h4>
+                          <p className="timeline-description">{event.content}</p>
+                          
+                          {event.sources && event.sources.length > 0 && (
+                            <div className="timeline-sources">
+                              <span className="sources-label">消息来源：</span>
+                              <div className="sources-tags">
+                                {event.sources.map((source, idx) => (
+                                  <span key={idx} className="source-tag">{source}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="content-card">
+                <div className="card-header">
+                  <h2 className="card-title">📅 事件时间线</h2>
+                  <p className="card-subtitle">完整追踪事件发展过程</p>
+                </div>
+                <div className="card-body">
+                  <div className="timeline-empty">
+                    <p>暂无相关事件时间线数据</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 侧边栏 */}
@@ -363,17 +433,27 @@ export default function NewsPage() {
             <div className="sidebar-card">
               <h3 className="card-title">相关新闻</h3>
               <div className="related-news-list">
-                {relatedNews.map((news) => (
-                  <div key={news.id} className="related-news-item" onClick={() => window.location.href = `/newspage/${news.id}`}>
-                    <div className="related-news-header">
-                      <div className="related-news-category">{news.category}</div>
-                      <span className="related-news-time">{news.published_at}</span>
-                    </div>
-                    <h4 className="related-news-title">{news.title}</h4>
-                    <p className="related-news-summary">{news.summary}</p>
-                    <div className="related-news-source">{news.source}</div>
+                {relatedLoading ? (
+                  <div className="loading-container">
+                    <p>正在加载相关新闻...</p>
                   </div>
-                ))}
+                ) : relatedNews.length > 0 ? (
+                  relatedNews.map((news) => (
+                    <div key={news.id} className="related-news-item" onClick={() => window.location.href = `/newspage/${news.id}`}>
+                      <div className="related-news-header">
+                        <div className="related-news-category">{news.category}</div>
+                        <span className="related-news-time">{news.published_at}</span>
+                      </div>
+                      <h4 className="related-news-title">{news.title}</h4>
+                      <p className="related-news-summary">{news.summary}</p>
+                      <div className="related-news-source">{news.source}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-related-news">
+                    <p>暂无相关新闻</p>
+                  </div>
+                )}
               </div>
             </div>
 
