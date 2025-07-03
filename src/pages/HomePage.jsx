@@ -37,15 +37,25 @@ export default function HomePage() {
       setLoading(true);
       setError(null);
       
-      const [allNewsData, hotNewsData, latestNewsData] = await Promise.all([
-        fetchNews('', 6), // 获取全部新闻
+      const [latestNewsData, hotNewsData] = await Promise.all([
+        fetchNews('/latest', 12), // 获取更多最新新闻用于分配
         fetchNews('/hot', 6), // 获取热门新闻
-        fetchNews('/latest', 6) // 获取最新新闻
       ]);
       
-      setFeaturedNews(allNewsData);
+      // 今日焦点：从最新新闻中选择热度最高的6条
+      const featuredNewsData = latestNewsData
+        .sort((a, b) => (b.view_count || 0) - (a.view_count || 0)) // 按热度排序
+        .slice(0, 6);
+      
+      // 全球最新动态：排除已在今日焦点中的新闻
+      const featuredIds = new Set(featuredNewsData.map(news => news.id));
+      const remainingLatestNews = latestNewsData
+        .filter(news => !featuredIds.has(news.id))
+        .slice(0, 6);
+      
+      setFeaturedNews(featuredNewsData);
       setHotNews(hotNewsData);
-      setLatestNews(latestNewsData);
+      setLatestNews(remainingLatestNews);
     } catch (error) {
       setError('获取新闻数据失败，请稍后重试');
       console.error('Error fetching news:', error);
