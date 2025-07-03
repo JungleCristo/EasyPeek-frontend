@@ -42,7 +42,6 @@ export default function NewsPage() {
       readCount: rawData.view_count || 0,
       likeCount: rawData.like_count || 0,
       commentCount: rawData.comment_count || 0,
-      followCount: rawData.follow_count || 0,
       tags: Array.isArray(rawData.tags) ? rawData.tags : (rawData.tags ? rawData.tags.split(',').map(tag => tag.trim()) : []),
       aiPrediction: rawData.ai_prediction || "暂无AI预测分析",
       // 格式化时间
@@ -200,15 +199,7 @@ export default function NewsPage() {
     }
   };
 
-  // 解析标签字符串
-  const parseTags = (tagsString) => {
-    if (!tagsString) return [];
-    try {
-      return JSON.parse(tagsString);
-    } catch {
-      return [];
-    }
-  };
+
 
   // 格式化评论数据
   const formatComments = (commentsList) => {
@@ -237,7 +228,7 @@ export default function NewsPage() {
         setComments([]);
         setCommentsTotal(0);
       }
-    } catch (e) {
+    } catch (_) {
       setComments([]);
       setCommentsTotal(0);
     } finally {
@@ -268,7 +259,7 @@ export default function NewsPage() {
       } else {
         alert(result.message || '评论失败');
       }
-    } catch (e) {
+    } catch (_) {
       alert('评论失败');
     } finally {
       setSubmitting(false);
@@ -291,7 +282,7 @@ export default function NewsPage() {
       } else {
         alert(result.message || '删除失败');
       }
-    } catch (e) {
+    } catch (_) {
       alert('删除失败');
     }
   };
@@ -304,7 +295,7 @@ export default function NewsPage() {
   };
 
   // 处理评论点赞
-  const handleLikeComment = async (commentId, currentLikeCount) => {
+  const handleLikeComment = async (commentId) => {
     const token = localStorage.getItem('token');
     if (!token) {
       alert('请先登录');
@@ -641,15 +632,6 @@ export default function NewsPage() {
 
           {/* 侧边栏 */}
           <div className="sidebar">
-            {/* 关注按钮 */}
-            <div className="sidebar-card">
-              <div className="follow-section">
-                <button className="follow-btn">
-                  👥 关注此新闻 ({newsData.share_count || 0})
-                </button>
-                <p className="follow-desc">关注后将收到相关新闻提醒</p>
-              </div>
-            </div>
 
             {/* 相关新闻 */}
             <div className="sidebar-card">
@@ -756,7 +738,7 @@ export default function NewsPage() {
                             {/* 点赞按钮 */}
                             <button
                               className={`comment-like-btn ${likedComments.has(comment.id) ? 'liked' : ''} ${likedCommentsLoading.has(comment.id) ? 'loading' : ''}`}
-                              onClick={() => handleLikeComment(comment.id, comment.like_count)}
+                              onClick={() => handleLikeComment(comment.id)}
                               disabled={likedCommentsLoading.has(comment.id)}
                             >
                               <svg 
