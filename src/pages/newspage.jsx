@@ -241,14 +241,31 @@ export default function NewsPage() {
     if (!commentInput.trim()) return;
     setSubmitting(true);
     const token = localStorage.getItem('token');
+    
     try {
-      const res = await fetch('http://localhost:8080/api/v1/comments', {
-        method: 'POST',
-        headers: {
+      let url, headers, body;
+      
+      if (token) {
+        // 已登录用户使用原有接口
+        url = 'http://localhost:8080/api/v1/comments';
+        headers = {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ news_id: Number(id), content: commentInput.trim() })
+        };
+        body = JSON.stringify({ news_id: Number(id), content: commentInput.trim() });
+      } else {
+        // 未登录用户使用匿名评论接口
+        url = 'http://localhost:8080/api/v1/comments/anonymous';
+        headers = {
+          'Content-Type': 'application/json'
+        };
+        body = JSON.stringify({ news_id: Number(id), content: commentInput.trim() });
+      }
+      
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body
       });
       const result = await res.json();
       if (result.code === 200) {
@@ -298,7 +315,7 @@ export default function NewsPage() {
   const handleLikeComment = async (commentId) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('请先登录');
+      alert('点赞需要先登录哦');
       return;
     }
 
@@ -708,7 +725,7 @@ export default function NewsPage() {
               <div className="comment-input-row">
                 <input
                   className="comment-input"
-                  placeholder="哎呦，不错哦，发条评论吧"
+                  placeholder={currentUserId ? "哎呦，不错哦，发条评论吧" : "未登录用户也可以发表评论哦"}
                   value={commentInput}
                   onChange={e => setCommentInput(e.target.value)}
                   maxLength={1000}
@@ -719,7 +736,7 @@ export default function NewsPage() {
                   onClick={handleSubmitComment}
                   disabled={submitting || !commentInput.trim()}
                 >
-                  发布
+                  {currentUserId ? "发布" : "匿名发布"}
                 </button>
               </div>
               <div className="comments-list">
@@ -728,9 +745,13 @@ export default function NewsPage() {
                 ) : comments.length > 0 ? (
                   comments.map((comment) => (
                     <div key={comment.id} className="comment-item">
-                      <div className="comment-avatar">用</div>
+                      <div className={`comment-avatar ${comment.is_anonymous ? 'anonymous' : ''}`}>
+                        {comment.is_anonymous ? '匿' : '用'}
+                      </div>
                       <div className="comment-content">
-                        <div className="comment-author">用户 {comment.user_id}</div>
+                        <div className={`comment-author ${comment.is_anonymous ? 'anonymous' : ''}`}>
+                          {comment.is_anonymous ? '未命名用户' : `用户 ${comment.user_id}`}
+                        </div>
                         <div className="comment-text">{comment.content}</div>
                         <div className="comment-footer">
                           <div className="comment-time">{comment.created_at}</div>
@@ -757,8 +778,8 @@ export default function NewsPage() {
                               <span className="like-count">{comment.like_count || 0}</span>
                             </button>
                             
-                            {/* 删除按钮，仅显示在自己评论右侧 */}
-                            {currentUserId === comment.user_id && (
+                            {/* 删除按钮，仅显示在自己评论右侧，匿名评论不能删除 */}
+                            {!comment.is_anonymous && currentUserId === comment.user_id && (
                               <div className="comment-delete-actions">
                                 <span
                                   className="comment-action-dot"

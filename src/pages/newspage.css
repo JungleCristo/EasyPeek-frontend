@@ -696,6 +696,20 @@
     font-size: 12px;
     flex-shrink: 0;
   }
+
+  /* 匿名评论样式 - 通过类名来区分 */
+  .comment-avatar.anonymous {
+    background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+  }
+
+  .comment-author.anonymous {
+    color: #6b7280;
+    font-style: italic;
+  }
+
+  body.dark .comment-author.anonymous {
+    color: #9ca3af;
+  }
   
   .comment-content {
     flex: 1;
