@@ -14,6 +14,7 @@ import {
   checkFollow,
   getFollowStats,
   changePassword,
+  getFollowedEventsRecentNews,
   handleApiError
 } from '../../api/userApi';
 import { getUserProfile, updateUserProfile } from '../../api/userApi';
@@ -76,6 +77,11 @@ const ProfilePage = () => {
   const [followsTotal, setFollowsTotal] = useState(0);
   const [followsTotalPages, setFollowsTotalPages] = useState(0);
   const [followStats, setFollowStats] = useState({ total_follows: 0 });
+  
+  // 关注事件新闻相关状态
+  const [followedNews, setFollowedNews] = useState([]);
+  const [followedNewsLoading, setFollowedNewsLoading] = useState(false);
+  const [followedNewsHours, setFollowedNewsHours] = useState(24);
   
   // 错误状态
   const [error, setError] = useState('');
@@ -315,6 +321,22 @@ const ProfilePage = () => {
     }
   };
 
+  // 获取关注事件的最近新闻
+  const fetchFollowedEventsNews = async (hours = 24) => {
+    try {
+      setFollowedNewsLoading(true);
+      setError('');
+      const response = await getFollowedEventsRecentNews({ hours });
+      setFollowedNews(response.recent_news || []);
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setError(errorMessage);
+      console.error('获取关注事件新闻失败:', error);
+    } finally {
+      setFollowedNewsLoading(false);
+    }
+  };
+
   // 标记消息已读
   const handleMarkRead = async (messageId) => {
     try {
@@ -506,17 +528,25 @@ const ProfilePage = () => {
       if (token) {
         fetchFollows(1);
       } else {
-
         setFollows([]);
         setError('请先登录后查看关注列表');
       }
+    } else if (activeTab === 'news-updates') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        fetchFollowedEventsNews(followedNewsHours);
+      } else {
+        setFollowedNews([]);
+        setError('请先登录后查看关注动态');
+      }
     }
-  }, [activeTab, messageType]);
+  }, [activeTab, messageType, followedNewsHours]);
 
   const tabs = [
     { id: 'info', label: '个人设置', icon: '👤' },
     { id: 'messages', label: '我的消息', icon: '🔔' },
     { id: 'following', label: '我的关注', icon: '❤️' },
+    { id: 'news-updates', label: '关注动态', icon: '📰' },
   ];
 
   return (
@@ -1076,6 +1106,134 @@ const ProfilePage = () => {
                           </div>
                         )}
                       </>
+                    )}
+                  </div>
+                )}
+
+                {/* 关注动态标签页 */}
+                {activeTab === 'news-updates' && (
+                  <div className="tab-content">
+                    <div className="tab-header">
+                      <h2>关注动态</h2>
+                      <p>查看您关注事件的最新新闻动态</p>
+                      <div className="news-controls">
+                        <label>时间范围：</label>
+                        <select 
+                          value={followedNewsHours} 
+                          onChange={(e) => {
+                            const newHours = parseInt(e.target.value);
+                            setFollowedNewsHours(newHours);
+                            fetchFollowedEventsNews(newHours);
+                          }}
+                          className="hours-filter"
+                        >
+                          <option value={6}>最近6小时</option>
+                          <option value={24}>最近24小时</option>
+                          <option value={72}>最近3天</option>
+                          <option value={168}>最近7天</option>
+                        </select>
+                        <button 
+                          onClick={() => fetchFollowedEventsNews(followedNewsHours)}
+                          style={{marginLeft: '20px', padding: '5px 10px'}}
+                          disabled={followedNewsLoading}
+                        >
+                          🔄 刷新动态
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {error && (
+                      <div className="error-message">
+                        <p>❌ {error}</p>
+                        <button 
+                          onClick={() => {
+                            setError('');
+                            fetchFollowedEventsNews(followedNewsHours);
+                          }}
+                          className="retry-btn"
+                        >
+                          🔄 重新加载
+                        </button>
+                      </div>
+                    )}
+                    
+                    {followedNewsLoading ? (
+                      <div className="loading">加载中...</div>
+                    ) : (
+                      <div className="news-updates-list">
+                        {followedNews.length === 0 ? (
+                          <div className="empty-state">
+                            <div className="empty-icon">📰</div>
+                            <h3>暂无最新动态</h3>
+                            <p>您关注的事件在选定时间范围内没有新的相关新闻。</p>
+                            <div className="empty-actions">
+                              <button 
+                                onClick={() => {
+                                  setFollowedNewsHours(168); // 切换到7天
+                                  fetchFollowedEventsNews(168);
+                                }}
+                                className="expand-range-btn"
+                              >
+                                📅 扩大时间范围
+                              </button>
+                              <Link to="/stories" className="browse-link">🏠 浏览事件</Link>
+                            </div>
+                          </div>
+                        ) : (
+                          followedNews.map((newsItem, index) => (
+                            <div key={`${newsItem.news_id}-${index}`} className="news-update-item">
+                              <div className="news-update-header">
+                                <div className="event-info">
+                                  <span className="event-badge">📍 {newsItem.event_title}</span>
+                                  <span className={`status-badge ${newsItem.event_status === '进行中' ? 'ongoing' : 'completed'}`}>
+                                    {newsItem.event_status}
+                                  </span>
+                                </div>
+                                <span className="news-time">{formatTime(newsItem.published_at)}</span>
+                              </div>
+                              
+                              <div className="news-update-content">
+                                <h4 className="news-title">
+                                  {newsItem.news_link ? (
+                                    <a href={newsItem.news_link} target="_blank" rel="noopener noreferrer">
+                                      {newsItem.news_title}
+                                    </a>
+                                  ) : (
+                                    newsItem.news_title
+                                  )}
+                                </h4>
+                                
+                                {newsItem.news_summary && (
+                                  <p className="news-summary">{newsItem.news_summary}</p>
+                                )}
+                                
+                                <div className="news-meta">
+                                  {newsItem.news_source && (
+                                    <span className="news-source">📰 {newsItem.news_source}</span>
+                                  )}
+                                  {newsItem.news_author && (
+                                    <span className="news-author">✍️ {newsItem.news_author}</span>
+                                  )}
+                                  <span className="publish-time">
+                                    🕒 {new Date(newsItem.published_at).toLocaleString('zh-CN')}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="news-update-actions">
+                                <Link to={`/stories/${newsItem.event_id}`}>
+                                  <button className="view-event-btn">👁️ 查看事件</button>
+                                </Link>
+                                {newsItem.news_link && (
+                                  <a href={newsItem.news_link} target="_blank" rel="noopener noreferrer">
+                                    <button className="view-news-btn">🔗 阅读原文</button>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
