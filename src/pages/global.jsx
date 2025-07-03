@@ -7,11 +7,11 @@ import './global.css';
 const GlobalPage = () => {
   const [currentView, setCurrentView] = useState('grid');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategories, setSelectedCategories] = useState(['all']);
   const [sortBy, setSortBy] = useState('latest');
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({
-    category: 'all',
+    categories: ['all'],
     sortBy: 'latest',
     search: ''
   });
@@ -48,9 +48,9 @@ const GlobalPage = () => {
   // 当获取到所有数据后，根据当前筛选条件过滤数据
   useEffect(() => {
     if (allNewsData.length > 0) {
-      fetchNewsByCategory(appliedFilters.category, appliedFilters.sortBy);
+      fetchNewsByCategory(appliedFilters.categories, appliedFilters.sortBy);
     }
-  }, [allNewsData, appliedFilters.category, appliedFilters.sortBy]);
+  }, [allNewsData, appliedFilters.categories, appliedFilters.sortBy]);
 
   // 获取所有新闻数据
   const fetchAllNews = async () => {
@@ -117,7 +117,7 @@ const GlobalPage = () => {
   };
 
   // 根据分类和排序过滤新闻数据
-  const fetchNewsByCategory = async (category, sort = 'latest') => {
+  const fetchNewsByCategory = async (categories, sort = 'latest') => {
     try {
       // 如果还没有获取所有数据，先获取
       if (allNewsData.length === 0) {
@@ -128,7 +128,7 @@ const GlobalPage = () => {
       let filteredData = [...allNewsData];
 
       // 根据分类过滤
-      if (category !== 'all') {
+      if (!categories.includes('all')) {
         const categoryMap = {
           'politics': '政治',
           'economy': '经济',
@@ -141,10 +141,12 @@ const GlobalPage = () => {
           'education': '教育',
           'health': '健康'
         };
-        const categoryName = categoryMap[category];
-        if (categoryName) {
-          filteredData = filteredData.filter(news => news.category === categoryName);
-        }
+        filteredData = filteredData.filter(news => {
+          return categories.some(category => {
+            const categoryName = categoryMap[category];
+            return categoryName && news.category === categoryName;
+          });
+        });
       }
 
       // 根据排序方式排序
@@ -188,7 +190,7 @@ const GlobalPage = () => {
   // 应用筛选
   const applyFilters = () => {
     setAppliedFilters({
-      category: selectedCategory,
+      categories: selectedCategories,
       sortBy: sortBy,
       search: searchQuery
     });
@@ -198,11 +200,11 @@ const GlobalPage = () => {
 
   // 重置筛选
   const resetFilters = () => {
-    setSelectedCategory('all');
+    setSelectedCategories(['all']);
     setSortBy('latest');
     setSearchQuery('');
     setAppliedFilters({
-      category: 'all',
+      categories: ['all'],
       sortBy: 'latest',
       search: ''
     });
@@ -215,7 +217,7 @@ const GlobalPage = () => {
     let filtered = globalNewsData;
 
     // 按分类筛选
-    if (appliedFilters.category !== 'all') {
+    if (!appliedFilters.categories.includes('all')) {
       filtered = filtered.filter(news => {
         const categoryMap = {
           'politics': '政治',
@@ -229,7 +231,10 @@ const GlobalPage = () => {
           'education': '教育',
           'health': '健康'
         };
-        return news.category === categoryMap[appliedFilters.category];
+        // 检查新闻分类是否在选中的分类列表中
+        return appliedFilters.categories.some(selectedCat => 
+          news.category === categoryMap[selectedCat]
+        );
       });
     }
 
@@ -288,12 +293,12 @@ const GlobalPage = () => {
   // 监听筛选条件变化，自动更新isFilterChanged状态
   useEffect(() => {
     const hasChanged = 
-      selectedCategory !== appliedFilters.category ||
+      JSON.stringify(selectedCategories) !== JSON.stringify(appliedFilters.categories) ||
       sortBy !== appliedFilters.sortBy ||
       searchQuery !== appliedFilters.search;
     
     setIsFilterChanged(hasChanged);
-  }, [selectedCategory, sortBy, searchQuery, appliedFilters]);
+  }, [selectedCategories, sortBy, searchQuery, appliedFilters]);
 
   // 渲染网格视图 - 复用HomePage.jsx的新闻卡片样式
   const renderGridView = () => (
@@ -473,9 +478,31 @@ const GlobalPage = () => {
                   {categories.map((category) => (
                     <div
                       key={category.id}
-                      className={`category-item ${selectedCategory === category.id ? 'active' : ''}`}
+                      className={`category-item ${selectedCategories.includes(category.id) ? 'active' : ''}`}
                       onClick={() => {
-                        setSelectedCategory(category.id);
+                        if (category.id === 'all') {
+                          // 点击"全部"时，清空其他选择
+                          setSelectedCategories(['all']);
+                        } else {
+                          setSelectedCategories(prev => {
+                            // 如果当前包含"全部"，先移除"全部"
+                            let newCategories = prev.filter(cat => cat !== 'all');
+                            
+                            if (newCategories.includes(category.id)) {
+                              // 如果已选中，则取消选中
+                              newCategories = newCategories.filter(cat => cat !== category.id);
+                              // 如果没有选中任何分类，默认选中"全部"
+                              if (newCategories.length === 0) {
+                                newCategories = ['all'];
+                              }
+                            } else {
+                              // 如果未选中，则添加到选中列表
+                              newCategories.push(category.id);
+                            }
+                            
+                            return newCategories;
+                          });
+                        }
                       }}
                     >
                       <div className="category-info">
@@ -525,13 +552,15 @@ const GlobalPage = () => {
                 </div>
 
                 {/* 当前筛选状态显示 */}
-                {Object.values(appliedFilters).some(filter => filter !== 'all' && filter !== '' && filter !== 'latest') && (
+                {(!appliedFilters.categories.includes('all') || appliedFilters.sortBy !== 'latest' || appliedFilters.search) && (
                   <div className="current-filters">
                     <h4 className="current-filters-title">当前筛选：</h4>
                     <div className="filter-tags">
-                      {appliedFilters.category !== 'all' && (
+                      {!appliedFilters.categories.includes('all') && (
                         <span className="filter-tag">
-                          分类: {categories.find(c => c.id === appliedFilters.category)?.name}
+                          分类: {appliedFilters.categories.map(catId => 
+                            categories.find(c => c.id === catId)?.name
+                          ).join(', ')}
                         </span>
                       )}
                       {appliedFilters.sortBy !== 'latest' && (
