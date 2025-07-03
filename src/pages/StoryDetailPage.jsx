@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
+import { addFollow, removeFollow, checkFollow, handleApiError } from '../api/userApi';
 import './StoryDetailPage.css';
 
 const StoryDetailPage = () => {
@@ -17,6 +18,22 @@ const StoryDetailPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [newsPerPage] = useState(5); // 每页显示5条新闻
   const [eventStats, setEventStats] = useState(null);
+  
+  // 关注功能相关状态
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // 通知状态
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+
+  // 显示通知
+  const showNotification = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 3000); // 3秒后自动隐藏
+  };
 
   // API调用函数
   const fetchEventDetail = async () => {
@@ -173,8 +190,27 @@ const StoryDetailPage = () => {
       fetchEventDetail();
       fetchEventNews();
       fetchEventStats();
+      checkFollowStatus(); // 检查关注状态
     }
   }, [id]);
+
+  // 监听登录状态变化
+  useEffect(() => {
+    checkLoginStatus();
+    // 可以监听storage变化来实时更新登录状态
+    const handleStorageChange = () => {
+      const wasLoggedIn = isLoggedIn;
+      const nowLoggedIn = checkLoginStatus();
+      if (wasLoggedIn !== nowLoggedIn && nowLoggedIn) {
+        checkFollowStatus(); // 如果刚登录，检查关注状态
+      } else if (!nowLoggedIn) {
+        setIsFollowing(false); // 如果退出登录，重置关注状态
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [id, isLoggedIn]);
 
   // 格式化新闻数据并进行筛选和排序
   const formattedNews = formatNewsData(newsTimeline);
@@ -234,6 +270,57 @@ const StoryDetailPage = () => {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // 检查用户登录状态
+  const checkLoginStatus = () => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+    return !!token;
+  };
+
+  // 检查是否已关注此事件
+  const checkFollowStatus = async () => {
+    if (!checkLoginStatus()) return;
+    
+    try {
+      const result = await checkFollow(parseInt(id));
+      setIsFollowing(result.is_following || false);
+    } catch (err) {
+      console.warn('检查关注状态失败:', err);
+      // 如果是认证错误，不显示错误消息
+      if (!err.message.includes('认证失败')) {
+        console.warn(handleApiError(err));
+      }
+    }
+  };
+
+  // 处理关注/取消关注
+  const handleFollowToggle = async () => {
+    if (!isLoggedIn) {
+      showNotification('请先登录后再关注事件', 'warning');
+      return;
+    }
+
+    setFollowLoading(true);
+    
+    try {
+      if (isFollowing) {
+        await removeFollow(parseInt(id));
+        setIsFollowing(false);
+        showNotification('已取消关注此事件', 'success');
+      } else {
+        await addFollow(parseInt(id));
+        setIsFollowing(true);
+        showNotification('已关注此事件，您将收到相关更新通知', 'success');
+      }
+    } catch (err) {
+      console.error('关注操作失败:', err);
+      const errorMessage = handleApiError(err);
+      showNotification(errorMessage, 'error');
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   if (loading) {
@@ -317,6 +404,24 @@ const StoryDetailPage = () => {
                 <span className="story-importance" style={{color: getImpactColor(formattedStory.importance)}}>
                   重要性: {formattedStory.importance}
                 </span>
+                {/* 关注按钮 */}
+                <button 
+                  className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                  onClick={handleFollowToggle}
+                  disabled={followLoading}
+                  title={isLoggedIn ? (isFollowing ? '取消关注' : '关注此事件') : '请先登录'}
+                >
+                  {followLoading ? '处理中...' : (
+                    <>
+                      <span className="follow-icon">
+                        {isFollowing ? '❤️' : '🤍'}
+                      </span>
+                      <span className="follow-text">
+                        {isFollowing ? '已关注' : '关注'}
+                      </span>
+                    </>
+                  )}
+                </button>
               </div>
               <div className="story-dates">
                 <span className="start-date">开始: {formatDate(formattedStory.startDate)}</span>
@@ -369,7 +474,17 @@ const StoryDetailPage = () => {
         {/* 时间线控制 */}
         <div className="timeline-controls">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>新闻时间线</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <h2>新闻时间线</h2>
+              {isLoggedIn && (
+                <div className="follow-status-indicator">
+                  <span className={`status-dot ${isFollowing ? 'following' : 'not-following'}`}></span>
+                  <span className="status-text">
+                    {isFollowing ? '已关注此事件' : '未关注'}
+                  </span>
+                </div>
+              )}
+            </div>
             <button 
               onClick={() => {
                 fetchEventNews();
@@ -565,6 +680,20 @@ const StoryDetailPage = () => {
       
       {/* 浮动按钮组 */}
       <ThemeToggle className="fixed" />
+      
+      {/* 通知组件 */}
+      {notification.show && (
+        <div className={`notification ${notification.type}`}>
+          <div className="notification-content">
+            <span className="notification-icon">
+              {notification.type === 'success' && '✅'}
+              {notification.type === 'error' && '❌'}
+              {notification.type === 'warning' && '⚠️'}
+            </span>
+            <span className="notification-message">{notification.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
