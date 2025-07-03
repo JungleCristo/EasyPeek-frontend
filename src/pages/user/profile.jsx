@@ -13,9 +13,49 @@ import {
   removeFollow,
   checkFollow,
   getFollowStats,
+  changePassword,
   handleApiError
 } from '../../api/userApi';
+import { getUserProfile, updateUserProfile } from '../../api/userApi';
 import './profile.css';
+
+// CSS styles for error and success messages
+const additionalStyles = `
+  .save-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    border: 1px solid #f5c6cb;
+  }
+  
+  .success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    border: 1px solid #c3e6cb;
+  }
+  
+  input:disabled, textarea:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+  }
+`;
+
+// Inject additional styles
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = additionalStyles;
+  document.head.appendChild(styleElement);
+}
 
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('info');
@@ -39,16 +79,159 @@ const ProfilePage = () => {
   
   // 错误状态
   const [error, setError] = useState('');
+  
+  // 修改密码相关状态
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // 用户信息相关状态
+  const [userInfo, setUserInfo] = useState({
+    username: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
+    interests: [],
+    avatar: '/placeholder.svg?height=100&width=100'
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
+  
+  // 表单编辑状态
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
+    interests: []
+  });
+  const [isEditing, setIsEditing] = useState(false);
 
-  const userInfo = {
-    name: "张三",
-    email: "zhangsan@example.com",
-    phone: "138****8888",
-    location: "北京市",
-    joinDate: "2023-06-15",
-    bio: "关注科技和商业动态，喜欢深度分析",
-    avatar: "/placeholder.svg?height=100&width=100",
+
+
+  // 获取用户信息
+  const fetchUserProfile = async () => {
+    try {
+      setProfileLoading(true);
+      setProfileError('');
+      const response = await getUserProfile();
+      
+      // 解析兴趣偏好JSON字符串
+      let interests = [];
+      if (response.interests) {
+        try {
+          interests = JSON.parse(response.interests);
+        } catch (e) {
+          interests = [];
+        }
+      }
+      
+      const userData = {
+         username: response.username || '',
+         email: response.email || '',
+         phone: response.phone || '',
+         location: response.location || '',
+         bio: response.bio || '',
+         interests: interests,
+         avatar: response.avatar || '/placeholder.svg?height=100&width=100',
+         joinDate: response.created_at ? new Date(response.created_at).toLocaleDateString() : ''
+       };
+       
+       setUserInfo(userData);
+       // 同时更新表单数据
+       setFormData({
+         username: userData.username,
+         email: userData.email,
+         phone: userData.phone,
+         location: userData.location,
+         bio: userData.bio,
+         interests: userData.interests
+       });
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setProfileError(errorMessage);
+      console.error('获取用户信息失败:', error);
+    } finally {
+      setProfileLoading(false);
+    }
   };
+  
+  // 更新用户信息
+  const handleUpdateProfile = async (profileData) => {
+    try {
+      setProfileLoading(true);
+      setProfileError('');
+      setProfileSuccess('');
+      
+      // 将兴趣偏好数组转换为JSON字符串
+      const updateData = {
+        ...profileData,
+        interests: JSON.stringify(profileData.interests || [])
+      };
+      
+      await updateUserProfile(updateData);
+      setProfileSuccess('个人信息更新成功！');
+      
+      // 重新获取用户信息
+      await fetchUserProfile();
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setProfileError(errorMessage);
+    } finally {
+      setProfileLoading(false);
+    }
+   };
+   
+   // 表单处理函数
+   const handleStartEdit = () => {
+     setIsEditing(true);
+     setProfileError('');
+     setProfileSuccess('');
+   };
+   
+   const handleCancelEdit = () => {
+     setIsEditing(false);
+     // 重置表单数据为原始用户信息
+     setFormData({
+       username: userInfo.username,
+       email: userInfo.email,
+       phone: userInfo.phone,
+       location: userInfo.location,
+       bio: userInfo.bio,
+       interests: userInfo.interests
+     });
+     setProfileError('');
+     setProfileSuccess('');
+   };
+   
+   const handleFormChange = (field, value) => {
+     setFormData(prev => ({
+       ...prev,
+       [field]: value
+     }));
+   };
+   
+   const handleInterestChange = (interest, checked) => {
+     setFormData(prev => ({
+       ...prev,
+       interests: checked 
+         ? [...prev.interests, interest]
+         : prev.interests.filter(i => i !== interest)
+     }));
+   };
+   
+   const handleSaveProfile = async () => {
+     await handleUpdateProfile(formData);
+     setIsEditing(false);
+   };
 
   // API调用函数
   const fetchMessages = async (page = 1, type = '') => {
@@ -230,6 +413,74 @@ const ProfilePage = () => {
     }
   };
 
+  // 修改密码处理函数
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    
+    // 验证输入
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('请填写所有密码字段');
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('新密码和确认密码不匹配');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError('新密码长度至少为8位');
+      return;
+    }
+    
+    // 验证密码必须包含字母和数字
+    const hasLetter = /[a-zA-Z]/.test(passwordData.newPassword);
+    const hasNumber = /[0-9]/.test(passwordData.newPassword);
+    
+    if (!hasLetter || !hasNumber) {
+      setPasswordError('新密码必须包含至少一个字母和一个数字');
+      return;
+    }
+    
+    try {
+      setPasswordLoading(true);
+      setPasswordError('');
+      setPasswordSuccess('');
+      
+      await changePassword({
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword
+      });
+      
+      setPasswordSuccess('密码修改成功！');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      const errorMessage = handleApiError(error);
+      setPasswordError(errorMessage);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  // 处理密码输入变化
+  const handlePasswordInputChange = (field, value) => {
+    setPasswordData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // 清除错误信息
+    if (passwordError) {
+      setPasswordError('');
+    }
+    if (passwordSuccess) {
+      setPasswordSuccess('');
+    }
+  };
+
   // 组件加载时获取数据
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -241,7 +492,8 @@ const ProfilePage = () => {
       return;
     }
     
-    // 页面加载时获取未读消息数量，用于显示统计按钮
+    // 页面加载时获取用户信息和未读消息数量
+    fetchUserProfile();
     fetchUnreadCount();
   }, []);
 
@@ -262,11 +514,9 @@ const ProfilePage = () => {
   }, [activeTab, messageType]);
 
   const tabs = [
-    { id: 'info', label: '个人信息', icon: '👤' },
+    { id: 'info', label: '个人设置', icon: '👤' },
     { id: 'messages', label: '我的消息', icon: '🔔' },
     { id: 'following', label: '我的关注', icon: '❤️' },
-    { id: 'preferences', label: '偏好设置', icon: '⚙️' },
-    { id: 'settings', label: '系统设置', icon: '🔧' },
   ];
 
   return (
@@ -283,22 +533,22 @@ const ProfilePage = () => {
                 <div className="profile-avatar">
                   <img src={userInfo.avatar || "/placeholder.svg"} alt="头像" />
                 </div>
-                <h3 className="profile-name">{userInfo.name}</h3>
-                <p className="profile-bio" title={userInfo.bio}>{userInfo.bio}</p>
+                <h3 className="profile-name">{userInfo.username || '未设置用户名'}</h3>
+                <p className="profile-bio" title={userInfo.bio || '这个人很懒，什么都没写'}>{userInfo.bio || '这个人很懒，什么都没写'}</p>
               </div>
 
               <div className="profile-info">
                 <div className="info-item">
                   <span className="info-icon">📧</span>
-                  {userInfo.email}
+                  {userInfo.email || '未设置邮箱'}
                 </div>
                 <div className="info-item">
                   <span className="info-icon">📱</span>
-                  {userInfo.phone}
+                  {userInfo.phone || '未设置手机号'}
                 </div>
                 <div className="info-item">
                   <span className="info-icon">📍</span>
-                  {userInfo.location}
+                  {userInfo.location || '未设置所在地'}
                 </div>
               </div>
 
@@ -338,36 +588,178 @@ const ProfilePage = () => {
               </div>
 
               <div className="card-body">
-                {/* 个人信息标签页 */}
+                {/* 个人设置标签页 */}
                 {activeTab === 'info' && (
                   <div className="tab-content">
-                    <div className="tab-header">
-                      <h2>个人信息</h2>
-                      <button className="edit-btn">✏️ 编辑</button>
+                    {/* 个人信息部分 */}
+                    <div className="settings-section">
+                      <div className="tab-header">
+                        <h2>个人信息</h2>
+                        {!isEditing ? (
+                          <button className="edit-btn" onClick={handleStartEdit}>✏️ 编辑</button>
+                        ) : (
+                          <div>
+                            <button className="edit-btn" onClick={handleCancelEdit}>❌ 取消</button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {profileError && (
+                        <div className="error-message">
+                          {profileError}
+                        </div>
+                      )}
+                      
+                      {profileSuccess && (
+                        <div className="success-message">
+                          {profileSuccess}
+                        </div>
+                      )}
+                      
+                      <div className="form-grid">
+                        <div className="form-group">
+                          <label>用户名</label>
+                          <input 
+                            type="text" 
+                            value={formData.username}
+                            onChange={(e) => handleFormChange('username', e.target.value)}
+                            disabled={!isEditing}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>邮箱</label>
+                          <input 
+                            type="email" 
+                            value={formData.email}
+                            onChange={(e) => handleFormChange('email', e.target.value)}
+                            disabled={!isEditing}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>手机号</label>
+                          <input 
+                            type="text" 
+                            value={formData.phone}
+                            onChange={(e) => handleFormChange('phone', e.target.value)}
+                            disabled={!isEditing}
+                            placeholder="请输入手机号"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>所在地</label>
+                          <input 
+                            type="text" 
+                            value={formData.location}
+                            onChange={(e) => handleFormChange('location', e.target.value)}
+                            disabled={!isEditing}
+                            placeholder="请输入所在地"
+                          />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>个人简介</label>
+                        <textarea 
+                          value={formData.bio}
+                          onChange={(e) => handleFormChange('bio', e.target.value)}
+                          disabled={!isEditing}
+                          rows={3}
+                          placeholder="请输入个人简介"
+                        />
+                      </div>
+                      {isEditing && (
+                        <button 
+                          className="save-btn" 
+                          onClick={handleSaveProfile}
+                          disabled={profileLoading}
+                        >
+                          {profileLoading ? '保存中...' : '保存个人信息'}
+                        </button>
+                      )}
                     </div>
-                    <div className="form-grid">
-                      <div className="form-group">
-                        <label>姓名</label>
-                        <input type="text" defaultValue={userInfo.name} />
+
+                    {/* 兴趣偏好部分 */}
+                    <div className="settings-section">
+                      <h3>兴趣偏好</h3>
+                      <div className="categories-grid">
+                        {["科技", "政治", "经济", "社会", "健康", "教育", "体育", "娱乐", "军事", "国际"].map((category) => (
+                          <label key={category} className="checkbox-item">
+                            <input
+                              type="checkbox"
+                              checked={formData.interests.includes(category)}
+                              onChange={(e) => handleInterestChange(category, e.target.checked)}
+                              disabled={!isEditing}
+                            />
+                            <span>{category}</span>
+                          </label>
+                        ))}
                       </div>
-                      <div className="form-group">
-                        <label>邮箱</label>
-                        <input type="email" defaultValue={userInfo.email} />
-                      </div>
-                      <div className="form-group">
-                        <label>手机号</label>
-                        <input type="text" defaultValue={userInfo.phone} />
-                      </div>
-                      <div className="form-group">
-                        <label>所在地</label>
-                        <input type="text" defaultValue={userInfo.location} />
-                      </div>
+                      {isEditing && (
+                        <button 
+                          className="save-btn" 
+                          onClick={handleSaveProfile}
+                          disabled={profileLoading}
+                        >
+                          {profileLoading ? '保存中...' : '保存偏好设置'}
+                        </button>
+                      )}
                     </div>
-                    <div className="form-group">
-                      <label>个人简介</label>
-                      <textarea defaultValue={userInfo.bio} rows={3} />
+
+                    {/* 修改密码部分 */}
+                    <div className="settings-section">
+                      <h3>修改密码</h3>
+                      <form onSubmit={handlePasswordChange}>
+                        <div className="form-group">
+                          <label>当前密码</label>
+                          <input
+                            type="password"
+                            value={passwordData.currentPassword}
+                            onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
+                            placeholder="请输入当前密码"
+                            required
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>新密码</label>
+                          <input
+                            type="password"
+                            value={passwordData.newPassword}
+                            onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
+                            placeholder="请输入新密码（至少8位）"
+                            required
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>确认新密码</label>
+                          <input
+                            type="password"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
+                            placeholder="请再次输入新密码"
+                            required
+                          />
+                        </div>
+                        
+                        {passwordError && (
+                          <div className="error-message">
+                            {passwordError}
+                          </div>
+                        )}
+                        
+                        {passwordSuccess && (
+                          <div className="success-message">
+                            {passwordSuccess}
+                          </div>
+                        )}
+                        
+                        <button 
+                          type="submit" 
+                          className="save-btn"
+                          disabled={passwordLoading}
+                        >
+                          {passwordLoading ? '修改中...' : '修改密码'}
+                        </button>
+                      </form>
                     </div>
-                    <button className="save-btn">保存更改</button>
                   </div>
                 )}
 
@@ -391,10 +783,8 @@ const ProfilePage = () => {
                           <option value="">全部消息</option>
                           <option value="system">系统消息</option>
                           <option value="like">点赞消息</option>
-                          <option value="comment">评论消息</option>
+                          <option value="comment">回复消息</option>
                           <option value="follow">关注消息</option>
-                          <option value="news_update">新闻更新</option>
-                          <option value="event_update">事件更新</option>
                         </select>
                         {unreadCount > 0 && (
                           <button 
@@ -445,10 +835,8 @@ const ProfilePage = () => {
                                       <span className={`message-type-badge ${message.type}`}>
                                         {message.type === 'system' && '系统'}
                                         {message.type === 'like' && '点赞'}
-                                        {message.type === 'comment' && '评论'}
+                                        {message.type === 'comment' && '回复'}
                                         {message.type === 'follow' && '关注'}
-                                        {message.type === 'news_update' && '新闻'}
-                                        {message.type === 'event_update' && '事件'}
                                       </span>
                                     </div>
                                     {!message.is_read && <span className="unread-badge">新</span>}
@@ -692,114 +1080,7 @@ const ProfilePage = () => {
                   </div>
                 )}
 
-                {/* 偏好设置标签页 */}
-                {activeTab === 'preferences' && (
-                  <div className="tab-content">
-                    <div className="tab-header">
-                      <h2>偏好设置</h2>
-                      <p>自定义您的个性化推荐体验</p>
-                    </div>
-                    
-                    {/* 兴趣偏好 */}
-                    <div className="preference-section">
-                      <h3>兴趣偏好</h3>
-                      <div className="categories-grid">
-                        {["科技", "政治", "经济", "环境", "医疗", "教育", "体育", "娱乐", "军事"].map((category) => (
-                          <label key={category} className="checkbox-item">
-                            <input
-                              type="checkbox"
-                              defaultChecked={["科技", "经济", "环境"].includes(category)}
-                            />
-                            <span>{category}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
 
-                    {/* 推荐设置 */}
-                    <div className="preference-section">
-                      <h3>推荐设置</h3>
-                      <div className="switch-list">
-                        <div className="switch-item">
-                          <div>
-                            <div className="switch-label">启用个性化推荐</div>
-                            <div className="switch-desc">基于您的阅读历史和偏好推荐相关内容</div>
-                          </div>
-                          <label className="switch">
-                            <input type="checkbox" defaultChecked />
-                            <span className="slider"></span>
-                          </label>
-                        </div>
-                        <div className="switch-item">
-                          <div>
-                            <div className="switch-label">热门事件推荐</div>
-                            <div className="switch-desc">推荐当前热门和趋势事件</div>
-                          </div>
-                          <label className="switch">
-                            <input type="checkbox" defaultChecked />
-                            <span className="slider"></span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button className="save-btn">保存偏好设置</button>
-                  </div>
-                )}
-
-                {/* 系统设置标签页 */}
-                {activeTab === 'settings' && (
-                  <div className="tab-content">
-                    <div className="tab-header">
-                      <h2>通知设置</h2>
-                      <p>管理您的通知偏好和隐私设置</p>
-                    </div>
-                    
-                    <div className="settings-section">
-                      <h3>通知设置</h3>
-                      <div className="switch-list">
-                        <div className="switch-item">
-                          <div>
-                            <div className="switch-label">关注事件更新</div>
-                            <div className="switch-desc">当您关注的事件有新进展时接收通知</div>
-                          </div>
-                          <label className="switch">
-                            <input type="checkbox" defaultChecked />
-                            <span className="slider"></span>
-                          </label>
-                        </div>
-                        <div className="switch-item">
-                          <div>
-                            <div className="switch-label">邮件通知</div>
-                            <div className="switch-desc">通过邮件接收重要通知</div>
-                          </div>
-                          <label className="switch">
-                            <input type="checkbox" />
-                            <span className="slider"></span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="settings-section">
-                      <h3>隐私设置</h3>
-                      <div className="switch-list">
-                        <div className="switch-item">
-                          <div>
-                            <div className="switch-label">公开个人资料</div>
-                            <div className="switch-desc">允许其他用户查看您的基本信息</div>
-                          </div>
-                          <label className="switch">
-                            <input type="checkbox" defaultChecked />
-                            <span className="slider"></span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button className="save-btn">保存设置</button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
