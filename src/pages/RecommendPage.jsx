@@ -7,322 +7,243 @@ import { eventConfig } from '../utils/statusConfig';
 import './RecommendPage.css';
 
 export default function RecommendPage() {
-  const [activeTab, setActiveTab] = useState('personal');
+  const [recommendationType, setRecommendationType] = useState('personalized');
+  const [timeRange, setTimeRange] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('科技');
-  const [recommendations, setRecommendations] = useState({
-    personal: [],
-    trending: [],
-    category: []
-  });
+  const [recommendations, setRecommendations] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventNews, setEventNews] = useState([]);
   const navigate = useNavigate();
 
   // 可选择的分类列表
-  const categories = ['科技', '经济', '环境', '体育', '健康', '教育', '文化', '政治'];
+  const categories = ['all', '科技', '经济', '环境', '体育', '健康', '教育', '文化', '政治'];
+
+  // 获取推荐理由
+  const getRecommendationReason = (type, category) => {
+    switch (type) {
+      case 'personalized':
+        return '基于您的阅读偏好';
+      case 'hot':
+        return '热门推荐';
+      case 'category':
+        return category === 'all' ? '全部分类推荐' : `${category}分类推荐`;
+      default:
+        return '智能推荐';
+    }
+  };
+
+  // 获取事件数据
+  const fetchEvents = async () => {
+    try {
+      let eventsUrl = 'http://localhost:8080/api/v1/events?page=1&limit=10';
+      
+      // 根据筛选条件调整API URL
+      if (recommendationType === 'category' && selectedCategory !== 'all') {
+        eventsUrl += `&category=${encodeURIComponent(selectedCategory)}`;
+      } else if (recommendationType === 'hot') {
+        eventsUrl += '&sort=hotness_score&order=desc';
+      }
+      
+      const response = await fetch(eventsUrl);
+      const result = await response.json();
+      
+      if (result.code === 200 && result.data) {
+        const eventsData = Array.isArray(result.data) ? result.data : result.data.events || [];
+        setEvents(eventsData.slice(0, 10));
+        
+        // 默认选择第一个事件
+        if (eventsData.length > 0) {
+          setSelectedEvent(eventsData[0]);
+          fetchEventNews(eventsData[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('获取事件数据失败:', err);
+      // 使用默认事件数据
+      const defaultEvents = [
+        {
+          id: 1,
+          title: "AI技术发展",
+          description: "人工智能技术在各个领域的最新发展动态",
+          category: "科技",
+          status: "ongoing",
+          hotness_score: 95.8,
+          view_count: 15420,
+          news_count: 28,
+          created_at: "2024-01-15T10:00:00Z"
+        },
+        {
+          id: 2,
+          title: "气候变化会议",
+          description: "全球气候变化应对措施和国际合作进展",
+          category: "环境",
+          status: "ongoing",
+          hotness_score: 89.3,
+          view_count: 12350,
+          news_count: 22,
+          created_at: "2024-01-14T14:30:00Z"
+        },
+        {
+          id: 3,
+          title: "新能源汽车发展",
+          description: "电动汽车和新能源技术的产业发展趋势",
+          category: "经济",
+          status: "ongoing",
+          hotness_score: 87.6,
+          view_count: 11280,
+          news_count: 19,
+          created_at: "2024-01-13T09:15:00Z"
+        }
+      ];
+      
+      // 根据筛选条件过滤默认事件
+      let filteredEvents = defaultEvents;
+      if (recommendationType === 'category' && selectedCategory !== 'all') {
+        filteredEvents = defaultEvents.filter(event => event.category === selectedCategory);
+      }
+      
+      setEvents(filteredEvents);
+      if (filteredEvents.length > 0) {
+        setSelectedEvent(filteredEvents[0]);
+        fetchEventNews(filteredEvents[0].id);
+      }
+    }
+  };
+
+  // 获取事件相关新闻
+  const fetchEventNews = async (eventId) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/events/${eventId}/news?limit=6`);
+      const result = await response.json();
+      
+      if (result.code === 200 && result.data) {
+        const newsData = Array.isArray(result.data) ? result.data : result.data.news || [];
+        setEventNews(newsData.slice(0, 6));
+      }
+    } catch (err) {
+      console.error('获取事件新闻失败:', err);
+      // 使用默认新闻数据
+      const defaultNews = [
+        {
+          id: 401,
+          title: "事件相关新闻示例",
+          summary: "这是一个事件相关新闻的示例内容",
+          source: "科技前沿",
+          category: "科技",
+          published_at: "2024-01-16 10:00",
+          view_count: 3245,
+          like_count: 189,
+          belonged_event: "AI技术发展"
+        }
+      ];
+      setEventNews(defaultNews);
+    }
+  };
 
   // 获取推荐数据
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8080/api/v1/news');
+        
+        // 构建API URL
+        let apiUrl = 'http://localhost:8080/api/v1/news';
+        const params = new URLSearchParams();
+        params.append('page', '1');
+        params.append('limit', '20');
+        
+        if (timeRange !== 'all') {
+          params.append('time_range', timeRange);
+        }
+        
+        switch (recommendationType) {
+          case 'personalized':
+            params.append('sort', 'personalized');
+            break;
+          case 'hot':
+            apiUrl += '/hot';
+            break;
+          case 'category':
+            if (selectedCategory !== 'all') {
+              apiUrl += `/category/${encodeURIComponent(selectedCategory)}`;
+            }
+            break;
+        }
+        
+        apiUrl += `?${params.toString()}`;
+        
+        const response = await fetch(apiUrl);
         const result = await response.json();
         
         if (result.code === 200 && result.data) {
-          const newsData = result.data;
+          const newsData = Array.isArray(result.data) ? result.data : result.data.news || [];
           
-          // 按热度排序获取热门新闻
-          const trendingNews = [...newsData]
-            .sort((a, b) => (b.hotness_score || 0) - (a.hotness_score || 0))
-            .slice(0, 3)
-            .map(news => ({
-              ...news,
-              reason: "热门推荐"
-            }));
+          // 处理推荐理由
+          const processedData = newsData.slice(0, 12).map(news => ({
+            ...news,
+            reason: getRecommendationReason(recommendationType, selectedCategory)
+          }));
           
-          // 按分类分组新闻
-          const categoryNews = {};
-          categories.forEach(category => {
-            const categoryData = newsData
-              .filter(news => news.category === category)
-              .slice(0, 2);
-            if (categoryData.length > 0) {
-              categoryNews[category] = categoryData;
-            }
-          });
-          
-          // 个人推荐（这里使用热门新闻作为个人推荐，实际应用中应该基于用户行为）
-          const personalNews = [...newsData]
-            .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
-            .slice(0, 3)
-            .map(news => ({
-              ...news,
-              reason: "基于您的阅读偏好"
-            }));
-          
-          setRecommendations({
-            personal: personalNews,
-            trending: trendingNews,
-            category: categoryNews
-          });
+          setRecommendations(processedData);
         }
       } catch (err) {
         console.error('获取推荐数据失败:', err);
-        // 如果API调用失败，使用默认数据
-        setRecommendations({
-          personal: [
-            {
-              id: 101,
-              title: "基于您的阅读历史：AI技术在医疗领域的突破性进展",
-              content: "人工智能在医疗诊断、药物研发等领域取得重大突破，为精准医疗提供新的可能性。",
-              summary: "AI技术在医疗领域的应用正在改变传统医疗模式，提高诊断准确性和治疗效果。",
-              source: "医学前沿",
-              category: "科技",
-              published_at: "2024-01-16 09:15",
-              created_by: 1,
-              is_active: true,
-              belonged_event: "AI技术发展",
-              reason: "基于您对AI和科技新闻的关注"
-            },
-            {
-              id: 102,
-              title: "推荐理由：您关注的新能源话题 - 氢能源技术商业化加速",
-              content: "氢能源作为清洁能源的重要组成部分，在政策支持下迎来商业化发展的关键时期。",
-              summary: "氢能源技术逐步成熟，多个国家加大投资力度，产业化进程明显加快。",
-              source: "能源观察",
-              category: "能源",
-              published_at: "2024-01-16 08:30",
-              created_by: 1,
-              is_active: true,
-              belonged_event: "新能源汽车发展",
-              reason: "匹配您的新能源关注偏好"
-            },
-            {
-              id: 103,
-              title: "为您精选：全球经济复苏中的数字化转型趋势",
-              content: "后疫情时代，数字化转型成为企业复苏和发展的重要驱动力，各行业加速数字化进程。",
-              summary: "数字化转型正在重塑商业模式，成为经济复苏的重要引擎。",
-              source: "经济观察报",
-              category: "经济",
-              published_at: "2024-01-16 07:45",
-              created_by: 1,
-              is_active: true,
-              belonged_event: "全球经济复苏",
-              reason: "基于您的经济新闻阅读偏好"
-            }
-          ],
-          trending: [
-            {
-              id: 201,
-              title: "热门话题：ChatGPT-5即将发布，AI能力再次飞跃",
-              content: "OpenAI即将发布ChatGPT-5，据悉新版本在推理能力和多模态处理方面有重大提升。",
-              summary: "ChatGPT-5的发布将进一步推动AI技术的普及和应用，引发行业新一轮变革。",
-              source: "科技前沿",
-              category: "科技",
-              published_at: "2024-01-16 10:00",
-              created_by: 1,
-              is_active: true,
-              belonged_event: "AI技术发展",
-            },
-            {
-              id: 202,
-              title: "全网热议：新型太阳能电池效率突破30%大关",
-              content: "科研团队成功开发出效率超过30%的钙钛矿太阳能电池，为清洁能源发展带来新希望。",
-              summary: "太阳能电池技术的重大突破，将大幅降低清洁能源成本，加速能源转型。",
-              source: "科学日报",
-              category: "科技",
-              published_at: "2024-01-16 09:30",
-              created_by: 1,
-              is_active: true,
-              belonged_event: "新能源汽车发展"
-            },
-            {
-              id: 203,
-              title: "社交媒体热点：2024年冬奥会筹备工作全面启动",
-              content: "2024年冬奥会各项筹备工作有序推进，场馆建设和赛事组织工作进入关键阶段。",
-              summary: "冬奥会筹备工作的顺利推进，展现了主办国的组织能力和基础设施水平。",
-              source: "体育新闻",
-              category: "体育",
-              published_at: "2024-01-16 08:15",
-              created_by: 1,
-              is_active: true,
-              belonged_event: "奥运会举办"
-            }
-          ],
-          category: {
-            '科技': [
-              {
-                id: 301,
-                title: "量子计算机商业化应用取得新进展",
-                content: "IBM、Google等公司在量子计算领域持续投入，量子优势在特定领域开始显现。",
-                summary: "量子计算技术逐步从实验室走向实际应用，为解决复杂计算问题提供新途径。",
-                source: "量子科技",
-                category: "科技",
-                published_at: "2024-01-16 11:20",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "AI技术发展"
-              },
-              {
-                id: 304,
-                title: "5G网络建设进入新阶段",
-                content: "全球5G网络覆盖率持续提升，为物联网和智能城市发展奠定基础。",
-                summary: "5G技术的普及将推动数字化转型，创造更多应用场景。",
-                source: "通信世界",
-                category: "科技",
-                published_at: "2024-01-16 10:30",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "5G发展"
-              }
-            ],
-            '环境': [
-              {
-                id: 302,
-                title: "全球碳中和目标推进情况报告",
-                content: "联合国发布最新报告，评估各国碳中和目标的实施进展和面临的挑战。",
-                summary: "碳中和目标的实现需要各国加强合作，采取更加积极的减排措施。",
-                source: "环境报告",
-                category: "环境",
-                published_at: "2024-01-16 10:45",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "气候变化会议"
-              },
-              {
-                id: 305,
-                title: "海洋塑料污染治理新技术",
-                content: "科学家开发出新型海洋塑料回收技术，有望大幅减少海洋污染。",
-                summary: "创新技术为解决海洋塑料污染问题提供了新的解决方案。",
-                source: "海洋科学",
-                category: "环境",
-                published_at: "2024-01-16 09:20",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "环境保护"
-              }
-            ],
-            '经济': [
-              {
-                id: 303,
-                title: "数字货币央行试点项目扩大规模",
-                content: "多个国家央行数字货币试点项目取得积极进展，数字支付生态系统不断完善。",
-                summary: "央行数字货币的推广将改变传统支付方式，提高金融服务效率。",
-                source: "金融时报",
-                category: "经济",
-                published_at: "2024-01-16 09:00",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "全球经济复苏"
-              }
-            ],
-            '体育': [
-              {
-                id: 306,
-                title: "2024年奥运会筹备工作进展顺利",
-                content: "各项筹备工作按计划推进，场馆建设和赛事组织达到预期目标。",
-                summary: "奥运会的成功举办将促进体育事业发展和国际交流。",
-                source: "体育周刊",
-                category: "体育",
-                published_at: "2024-01-16 08:45",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "奥运会举办"
-              }
-            ],
-            '健康': [
-              {
-                id: 307,
-                title: "新型疫苗研发取得重要突破",
-                content: "科研团队成功开发出针对多种病毒的广谱疫苗，临床试验效果良好。",
-                summary: "广谱疫苗的研发为预防传染病提供了新的解决方案。",
-                source: "医学新闻",
-                category: "健康",
-                published_at: "2024-01-16 11:00",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "医疗技术发展"
-              }
-            ],
-            '教育': [
-              {
-                id: 308,
-                title: "在线教育平台推动教育公平",
-                content: "数字化教育资源的普及正在缩小城乡教育差距，促进教育公平。",
-                summary: "技术进步为实现优质教育资源共享创造了条件。",
-                source: "教育观察",
-                category: "教育",
-                published_at: "2024-01-16 10:15",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "教育改革"
-              }
-            ],
-            '文化': [
-              {
-                id: 309,
-                title: "数字文物保护技术创新应用",
-                content: "3D扫描和虚拟现实技术在文物保护和展示中发挥重要作用。",
-                summary: "科技手段为文化遗产保护和传承提供了新的可能性。",
-                source: "文化遗产",
-                category: "文化",
-                published_at: "2024-01-16 09:45",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "文化保护"
-              }
-            ],
-            '政治': [
-              {
-                id: 310,
-                title: "国际合作应对全球挑战",
-                content: "各国加强在气候变化、公共卫生等领域的国际合作，共同应对全球性挑战。",
-                summary: "多边合作机制在解决全球问题中发挥着越来越重要的作用。",
-                source: "国际观察",
-                category: "政治",
-                published_at: "2024-01-16 08:00",
-                created_by: 1,
-                is_active: true,
-                belonged_event: "国际合作"
-              }
-            ]
+        // 使用默认数据
+        setRecommendations([
+          {
+            id: 101,
+            title: "基于您的阅读历史：AI技术在医疗领域的突破性进展",
+            summary: "AI技术在医疗领域的应用正在改变传统医疗模式，提高诊断准确性和治疗效果。",
+            source: "医学前沿",
+            category: "科技",
+            published_at: "2024-01-16 09:15",
+            reason: "基于您对AI和科技新闻的关注"
+          },
+          {
+            id: 102,
+            title: "推荐理由：您关注的新能源话题 - 氢能源技术商业化加速",
+            summary: "氢能源技术逐步成熟，多个国家加大投资力度，产业化进程明显加快。",
+            source: "能源观察",
+            category: "能源",
+            published_at: "2024-01-16 08:30",
+            reason: "匹配您的新能源关注偏好"
           }
-        });
+        ]);
       } finally {
         setLoading(false);
       }
     };
 
+    // 同时获取推荐数据和事件数据
     fetchRecommendations();
-  }, []);
+    fetchEvents();
+  }, [recommendationType, selectedCategory, timeRange]);
 
   const handleNewsClick = (newsId) => {
     navigate(`/newspage/${newsId}`);
   };
 
-  const tabs = [
-    { id: 'personal', label: '个性化推荐', icon: '🎯' },
-    { id: 'trending', label: '热门推荐', icon: '🔥' },
-    { id: 'category', label: '分类推荐', icon: '📂' }
-  ];
-
-  const getCurrentData = () => {
-    if (activeTab === 'category') {
-      return recommendations.category[selectedCategory] || [];
-    }
-    return recommendations[activeTab] || [];
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    fetchEventNews(event.id);
   };
 
-  const getTabDescription = () => {
-    switch(activeTab) {
-      case 'personal':
-        return '基于您的阅读历史和兴趣偏好，为您精心挑选的新闻内容';
-      case 'trending':
-        return '当前最受关注的热门新闻，把握时事脉搏';
+  const handleEventDetailClick = (eventId) => {
+    navigate(`/story/${eventId}`);
+  };
+
+  const getCurrentTitle = () => {
+    switch (recommendationType) {
+      case 'personalized':
+        return '个性化推荐';
+      case 'hot':
+        return '热门推荐';
       case 'category':
-        return '按照不同领域分类的优质新闻，深度了解各行业动态';
+        return `${selectedCategory}分类推荐`;
       default:
-        return '';
+        return '个性化推荐';
     }
   };
 
@@ -349,121 +270,246 @@ export default function RecommendPage() {
           <p className="recommend-subtitle">基于AI算法为您推荐最感兴趣的新闻内容</p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="tab-navigation">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-label">{tab.label}</span>
-            </button>
-          ))}
+        {/* 统一筛选设置 */}
+        <div className="recommendation-settings">
+          <div className="settings-header">
+            <h3 className="settings-title">智能筛选</h3>
+            <span className="settings-subtitle">调整推荐偏好，获得更精准的内容</span>
+          </div>
+          
+          <div className="settings-content">
+            <div className="settings-row">
+              {/* 推荐类型 */}
+              <div className="setting-group">
+                <label className="setting-label">推荐类型</label>
+                <div className="setting-buttons">
+                  <button 
+                    className={`setting-btn ${recommendationType === 'personalized' ? 'active' : ''}`}
+                    onClick={() => setRecommendationType('personalized')}
+                  >
+                    个性化
+                  </button>
+                  <button 
+                    className={`setting-btn ${recommendationType === 'hot' ? 'active' : ''}`}
+                    onClick={() => setRecommendationType('hot')}
+                  >
+                    热门
+                  </button>
+                  <button 
+                    className={`setting-btn ${recommendationType === 'category' ? 'active' : ''}`}
+                    onClick={() => setRecommendationType('category')}
+                  >
+                    分类
+                  </button>
+                </div>
+              </div>
+
+              {/* 时间范围 */}
+              <div className="setting-group">
+                <label className="setting-label">时间范围</label>
+                <div className="setting-buttons">
+                  <button 
+                    className={`setting-btn ${timeRange === 'today' ? 'active' : ''}`}
+                    onClick={() => setTimeRange('today')}
+                  >
+                    今日
+                  </button>
+                  <button 
+                    className={`setting-btn ${timeRange === 'week' ? 'active' : ''}`}
+                    onClick={() => setTimeRange('week')}
+                  >
+                    本周
+                  </button>
+                  <button 
+                    className={`setting-btn ${timeRange === 'month' ? 'active' : ''}`}
+                    onClick={() => setTimeRange('month')}
+                  >
+                    本月
+                  </button>
+                  <button 
+                    className={`setting-btn ${timeRange === 'all' ? 'active' : ''}`}
+                    onClick={() => setTimeRange('all')}
+                  >
+                    全部
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 分类选择器 - 当推荐类型为分类时显示 */}
+            {recommendationType === 'category' && (
+              <div className="settings-row">
+                <div className="setting-group">
+                  <label className="setting-label">选择分类</label>
+                  <div className="setting-buttons">
+                    {categories.map(category => (
+                      <button
+                        key={category}
+                        className={`setting-btn ${
+                          selectedCategory === category ? 'active' : ''
+                        }`}
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="settings-row">
+              {/* 智能开关 */}
+              <div className="setting-group">
+                <div className="setting-item">
+                  <span className="setting-label">个性化推荐</span>
+                  <label className="toggle-switch">
+                    <input type="checkbox" defaultChecked />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="setting-group">
+                <div className="setting-item">
+                  <span className="setting-label">多样化内容</span>
+                  <label className="toggle-switch">
+                    <input type="checkbox" defaultChecked />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Tab Description */}
-        <div className="tab-description">
-          <p>{getTabDescription()}</p>
-        </div>
-
-        {/* Category Selector */}
-        {activeTab === 'category' && (
-          <div className="category-selector">
-            <h3 className="selector-title">选择分类</h3>
-            <div className="category-buttons">
-              {categories.map(category => (
-                <button
-                  key={category}
-                  className={`category-button ${
-                    selectedCategory === category ? 'active' : ''
-                  }`}
-                  onClick={() => setSelectedCategory(category)}
+        {/* 主要内容区域 - 两栏布局 */}
+        <div className="recommend-main-container">
+          {/* 左栏 - 事件列表 + 事件相关新闻 */}
+          <div className="events-column">
+            <div className="events-header">
+              <h2 className="events-title">热门事件</h2>
+              <span className="events-count">{events.length} 个事件</span>
+            </div>
+            
+            <div className="events-list">
+              {events.map((event) => (
+                <div 
+                  key={event.id} 
+                  className={`event-card ${selectedEvent?.id === event.id ? 'selected' : ''}`}
+                  onClick={() => handleEventClick(event)}
                 >
-                  {category}
-                </button>
+                  <div className="event-header">
+                    <h3 className="event-title">{event.title}</h3>
+                    <div className="event-stats">
+                      <span className="event-hotness">🔥 {event.hotness_score?.toFixed(1) || '0.0'}</span>
+                    </div>
+                  </div>
+                  
+                  <p className="event-description">{event.description}</p>
+                  
+                  <div className="event-meta">
+                    <span className="event-category">{event.category}</span>
+                    <span className="event-news-count">{event.news_count || 0} 条新闻</span>
+                    <span className="event-views">{event.view_count || 0} 浏览</span>
+                  </div>
+                  
+                  <div className="event-actions">
+                    <button 
+                      className="event-detail-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventDetailClick(event.id);
+                      }}
+                    >
+                      查看详情
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-        )}
 
-        {/* Content Area */}
-        <div className="recommend-main">
-          <div className="content-header">
-            <h2 className="content-title">
-              {tabs.find(tab => tab.id === activeTab)?.label}
-            </h2>
-            <div className="content-stats">
-              <span className="stats-text">
-                为您找到 {getCurrentData().length} 条推荐内容
-              </span>
-            </div>
-          </div>
-
-          {/* News Grid */}
-          <div className="news-grid">
-            {getCurrentData().map((news) => (
-              <div key={news.id} className="news-card-wrapper">
-                <NewsCard 
-                  news={news} 
-                  eventConfig={eventConfig} 
-                  onNewsClick={handleNewsClick} 
-                />
-                {/* 推荐理由 */}
-                {news.reason && (
-                  <div className="recommendation-reason">
-                    <div className="reason-text">
-                      <span className="reason-icon">💡</span>
-                      {news.reason}
+            {/* 选中事件的新闻 - 在事件下方 */}
+            {selectedEvent && (
+              <div className="event-news-section">
+                <div className="event-news-header">
+                  <h2 className="event-news-title">
+                    事件：{selectedEvent.title}
+                  </h2>
+                  <span className="event-news-count">{eventNews.length} 条相关新闻</span>
+                </div>
+                
+                <div className="event-news-grid">
+                  {eventNews.map((news) => (
+                    <div key={news.id} className="event-news-card">
+                      <NewsCard 
+                        news={news} 
+                        eventConfig={eventConfig} 
+                        onNewsClick={handleNewsClick} 
+                      />
                     </div>
+                  ))}
+                </div>
+                
+                {eventNews.length === 0 && (
+                  <div className="empty-event-news">
+                    <div className="empty-icon">📰</div>
+                    <p>该事件暂无相关新闻</p>
                   </div>
                 )}
               </div>
-            ))}
+            )}
           </div>
 
-          {/* Empty State */}
-          {getCurrentData().length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">📰</div>
-              <h3>暂无推荐内容</h3>
-              <p>我们正在为您寻找更多感兴趣的新闻</p>
-            </div>
-          )}
-        </div>
+          {/* 右栏 - 纯新闻推荐 */}
+          <div className="news-column">
+            <div className="recommend-news-section">
+              <div className="content-header">
+                <h2 className="content-title">
+                  {getCurrentTitle()}
+                </h2>
+                <div className="content-stats">
+                  <span className="stats-text">
+                    为您找到 {recommendations.length} 条推荐内容
+                  </span>
+                  <span className="filter-status">
+                    📊 {timeRange === 'all' ? '全部时间' : timeRange === 'today' ? '今日' : timeRange === 'week' ? '本周' : '本月'}
+                    {recommendationType === 'category' && ` • ${selectedCategory}分类`}
+                  </span>
+                </div>
+              </div>
 
-        {/* Recommendation Settings */}
-        <div className="recommendation-settings">
-          <div className="settings-card">
-            <h3 className="settings-title">推荐设置</h3>
-            <div className="settings-options">
-              <div className="setting-item">
-                <span className="setting-label">个性化推荐</span>
-                <label className="toggle-switch">
-                  <input type="checkbox" defaultChecked />
-                  <span className="toggle-slider"></span>
-                </label>
+              {/* News Grid */}
+              <div className="recommend-news-grid">
+                {recommendations.map((news) => (
+                  <div key={news.id} className="news-card-wrapper">
+                    <NewsCard 
+                      news={news} 
+                      eventConfig={eventConfig} 
+                      onNewsClick={handleNewsClick} 
+                    />
+                    {/* 推荐理由 */}
+                    {news.reason && (
+                      <div className="recommendation-reason">
+                        <div className="reason-text">
+                          <span className="reason-icon">💡</span>
+                          {news.reason}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div className="setting-item">
-                <span className="setting-label">热门新闻推送</span>
-                <label className="toggle-switch">
-                  <input type="checkbox" defaultChecked />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
-              <div className="setting-item">
-                <span className="setting-label">分类推荐</span>
-                <label className="toggle-switch">
-                  <input type="checkbox" defaultChecked />
-                  <span className="toggle-slider"></span>
-                </label>
-              </div>
+
+              {/* Empty State */}
+              {recommendations.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-icon">📰</div>
+                  <h3>暂无推荐内容</h3>
+                  <p>我们正在为您寻找更多感兴趣的新闻</p>
+                </div>
+              )}
             </div>
-            <button className="refresh-btn">
-              <span className="refresh-icon">🔄</span>
-              刷新推荐
-            </button>
           </div>
         </div>
       </div>
