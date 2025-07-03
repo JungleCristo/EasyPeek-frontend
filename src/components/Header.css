@@ -89,47 +89,62 @@
   gap: 12px;
 }
 
-.admin-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-decoration: none;
+/* 管理员入口按钮样式 - 参考主题切换按钮 */
+.header-right a[title="管理员入口"] {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 20px !important;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 48px !important;
+  text-decoration: none !important;
 }
 
-.admin-link:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+/* 白天模式样式 */
+.header.light .header-right a[title="管理员入口"] {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #1a1a1a !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.header.light .header-right a[title="管理员入口"]:hover {
+  background: rgba(255, 255, 255, 1) !important;
+  color: #1890ff !important;
   transform: translateY(-2px);
-  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
-.admin-icon {
-  font-size: 16px;
-  filter: grayscale(1) brightness(2);
-  transition: all 0.3s ease;
+/* 黑夜模式样式 */
+.header.dark .header-right a[title="管理员入口"] {
+  background: rgba(45, 55, 72, 0.9) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
-.admin-link:hover .admin-icon {
-  filter: grayscale(0) brightness(1);
-  transform: scale(1.1);
+.header.dark .header-right a[title="管理员入口"]:hover {
+  background: rgba(45, 55, 72, 1) !important;
+  color: #40a9ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
-.header.dark .admin-link {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+/* 图标动画 */
+.header-right a[title="管理员入口"] {
+  transition: transform 0.3s ease;
 }
 
-.header.dark .admin-link:hover {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.3);
+.header-right a[title="管理员入口"]:hover {
+  transform: rotate(15deg);
 }
+
+
 
 .profile-btn,
 .logout-btn {

@@ -74,7 +74,7 @@ const Login = () => {
                 <p className={`login-subtitle ${theme}`}>开始您的新闻探索之旅</p>
               </div>
 
-              <Card className={`login-card ${theme}`} bordered={false}>
+              <Card className={`login-card ${theme}`} variant="borderless">
                 <Form
                   name="login"
                   onFinish={onFinish}
