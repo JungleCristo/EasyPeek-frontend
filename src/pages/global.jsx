@@ -249,12 +249,13 @@ const GlobalPage = () => {
       switch (appliedFilters.sortBy) {
         case 'latest':
           return dateB - dateA;
-        case 'hot':
+        case 'hot': {
           // 按热度排序，可以基于浏览量、点赞数等指标
           // 这里暂时按创建时间排序，实际项目中可以根据 view_count, like_count 等字段排序
           const hotScoreA = (a.view_count || 0) + (a.like_count || 0) + (a.comment_count || 0);
           const hotScoreB = (b.view_count || 0) + (b.like_count || 0) + (b.comment_count || 0);
           return hotScoreB - hotScoreA || dateB - dateA; // 热度相同时按时间排序
+        }
         default:
           return dateB - dateA;
       }
