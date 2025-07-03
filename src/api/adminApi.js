@@ -38,7 +38,7 @@ const apiRequest = async (endpoint, options = {}) => {
     }
 };
 
-// ==================== 认证相关 ====================
+// admin authentication
 export const adminLogin = async (credentials) => {
     try {
         const Response = await fetch(`${API_BASE_URL}/auth/admin-login`, {
@@ -96,8 +96,7 @@ export const checkAdminAuth = () => {
 
     try {
         const userData = JSON.parse(user);
-        // 检查用户角色是否为管理员
-        const isAdmin = userData.role === 'admin' || userData.role === 'system';
+        const isAdmin = userData.role === 'admin';
 
         return {
             isAuthenticated: isAdmin,
@@ -120,14 +119,14 @@ export const getCurrentAdminUser = () => {
 };
 
 
-
-
-// ==================== 系统统计 ====================
+// done
+// get system statistics
 export const getSystemStats = async () => {
     return await apiRequest('/stats');
 };
 
-// ==================== 用户管理 ====================
+
+// user 
 export const getUsers = async (params = {}) => {
     const queryParams = new URLSearchParams();
 

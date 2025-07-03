@@ -45,14 +45,14 @@ const UserManagement = () => {
                 ...filters
             };
             const response = await getUsers(params);
-            if (response.data.code === 200 && response.data.data) {
-                setUsers(response.data.data.users);
+            if (response.code === 200 && response.data) {
+                setUsers(response.data);
                 setPagination(prev => ({
                     ...prev,
-                    total: response.data.data.total || 0
+                    total: response.total || 0
                 }));
             } else {
-                message.error(response.data.message || '获取用户列表失败');
+                message.error(response.message || '获取用户列表失败');
             }
         } catch (error) {
             console.error('获取用户列表失败:', error);
@@ -85,11 +85,11 @@ const UserManagement = () => {
     const handleDelete = async (userId) => {
         try {
             const response = await deleteUser(userId);
-            if (response.data.code === 200) {
+            if (response.code === 200) {
                 message.success('用户删除成功');
                 fetchUsers();
             } else {
-                message.error(response.data.message || '删除用户失败');
+                message.error(response.message || '删除用户失败');
             }
         } catch (error) {
             console.error('删除用户失败:', error);
@@ -181,7 +181,7 @@ const UserManagement = () => {
             title: '用户ID',
             dataIndex: 'id',
             key: 'id',
-            width: 80,
+            width: 100,
             sorter: true
         },
         {
@@ -191,7 +191,13 @@ const UserManagement = () => {
             width: 80,
             render: (avatar, record) => (
                 <div className="user-avatar">
-                    <img src={avatar} alt={record.username} />
+                    <img
+                        src={avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${record.username}`}
+                        alt={record.username}
+                        onError={(e) => {
+                            e.target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${record.username}`;
+                        }}
+                    />
                 </div>
             )
         },

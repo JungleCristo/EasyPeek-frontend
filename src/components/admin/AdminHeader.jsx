@@ -13,7 +13,6 @@ const AdminHeader = () => {
     const [adminUser, setAdminUser] = useState(null);
 
     useEffect(() => {
-        // 获取管理员用户信息
         const user = getCurrentAdminUser();
         setAdminUser(user);
     }, []);
@@ -21,11 +20,10 @@ const AdminHeader = () => {
     const handleLogout = async () => {
         try {
             await adminLogout();
-            message.success('退出登录成功');
+            message.success('Logout successful!');
             navigate('/admin/login');
         } catch (error) {
             console.error('Logout failed:', error);
-            // 即使API调用失败，也要清除本地存储并跳转
             navigate('/admin/login');
         }
     };
@@ -37,9 +35,9 @@ const AdminHeader = () => {
     const navItems = [
         { path: '/admin', label: '控制台', icon: '🏠' },
         { path: '/admin/users', label: '用户管理', icon: '👥' },
-        { path: '/admin/events', label: '事件管理', icon: '📅' },
+        { path: '/admin/rss-sources', label: 'RSS管理', icon: '📡' },
         { path: '/admin/news', label: '新闻管理', icon: '📰' },
-        { path: '/admin/rss-sources', label: 'RSS管理', icon: '📡' }
+        { path: '/admin/events', label: '事件管理', icon: '📅' }
     ];
 
     return (
@@ -70,7 +68,7 @@ const AdminHeader = () => {
                     <button
                         onClick={handleBackToSite}
                         className="back-to-site-btn"
-                        title="返回主站"
+                        title="return"
                     >
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -86,7 +84,7 @@ const AdminHeader = () => {
                             </div>
                             <div className="admin-user-details">
                                 <div className="admin-username">{adminUser?.username || 'Admin'}</div>
-                                <div className="admin-role">{adminUser?.role === 'system' ? '系统管理员' : '管理员'}</div>
+                                <div className="admin-role">{'管理员'}</div>
                             </div>
                         </div>
                         <button onClick={handleLogout} className="admin-logout-btn">
