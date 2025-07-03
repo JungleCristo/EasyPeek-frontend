@@ -1,44 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { checkAdminAuth } from '../api/adminApi';
-import { Spin } from 'antd';
 
 const ProtectedRoute = ({ children, isAdmin = false }) => {
-    const [loading, setLoading] = useState(isAdmin); // 只有 admin 需要 loading
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const location = useLocation();
-
+    const [isLoading, setIsLoading] = useState(true);
+    
     useEffect(() => {
-        if (isAdmin) {
-            const { isAuthenticated: authenticated } = checkAdminAuth();
-            setIsAuthenticated(authenticated);
-            setLoading(false);
-        } else {
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            setIsAuthenticated(isLoggedIn);
-        }
-    }, [isAdmin]); // 依赖 isAdmin
-
-    if (isAdmin && loading) {
-        return (
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh'
-            }}>
-                <Spin size="large" />
-            </div>
-        );
+        // 模拟认证检查的异步过程
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 100);
+        
+        return () => clearTimeout(timer);
+    }, []);
+    
+    // 如果正在加载，显示加载状态
+    if (isLoading) {
+        return <div>Loading...</div>;
     }
-
-    if (!isAuthenticated) {
-        if (isAdmin) {
+    
+    if (isAdmin) {
+        // 管理员路由保护
+        const { isAuthenticated: authenticated } = checkAdminAuth();
+        if (!authenticated) {
             return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
         }
-        return <Navigate to="/login" replace />;
+    } else {
+        // 普通用户路由保护
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        if (!isLoggedIn) {
+            return <Navigate to="/login" replace />;
+        }
     }
-
+    
     return children;
 };
 
