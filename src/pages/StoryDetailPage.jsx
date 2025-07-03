@@ -194,23 +194,25 @@ const StoryDetailPage = () => {
     }
   }, [id]);
 
-  // 监听登录状态变化
+  // 监听登录状态变化 - 修复依赖问题
   useEffect(() => {
     checkLoginStatus();
     // 可以监听storage变化来实时更新登录状态
     const handleStorageChange = () => {
       const wasLoggedIn = isLoggedIn;
       const nowLoggedIn = checkLoginStatus();
-      if (wasLoggedIn !== nowLoggedIn && nowLoggedIn) {
-        checkFollowStatus(); // 如果刚登录，检查关注状态
-      } else if (!nowLoggedIn) {
-        setIsFollowing(false); // 如果退出登录，重置关注状态
+      if (wasLoggedIn !== nowLoggedIn) {
+        if (nowLoggedIn) {
+          checkFollowStatus(); // 如果刚登录，检查关注状态
+        } else {
+          setIsFollowing(false); // 如果退出登录，重置关注状态
+        }
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [id, isLoggedIn]);
+  }, [id]); // 移除isLoggedIn依赖，只依赖id
 
   // 格式化新闻数据并进行筛选和排序
   const formattedNews = formatNewsData(newsTimeline);
@@ -279,49 +281,92 @@ const StoryDetailPage = () => {
     return !!token;
   };
 
-  // 检查是否已关注此事件
-  const checkFollowStatus = async () => {
-    if (!checkLoginStatus()) return;
+  // 检查是否已关注此事件 - 添加重试机制
+  const checkFollowStatus = async (retryCount = 0) => {
+    if (!checkLoginStatus()) {
+      setIsFollowing(false);
+      return;
+    }
     
     try {
       const result = await checkFollow(parseInt(id));
       setIsFollowing(result.is_following || false);
     } catch (err) {
       console.warn('检查关注状态失败:', err);
-      // 如果是认证错误，不显示错误消息
-      if (!err.message.includes('认证失败')) {
+      
+      // 如果是网络错误且重试次数少于3次，则重试
+      if (retryCount < 3 && !err.message.includes('认证失败')) {
+        setTimeout(() => {
+          checkFollowStatus(retryCount + 1);
+        }, 1000 * (retryCount + 1)); // 递增延迟
+      } else if (!err.message.includes('认证失败')) {
         console.warn(handleApiError(err));
       }
     }
   };
 
-  // 处理关注/取消关注
+  // 处理关注/取消关注 - 添加状态验证和409错误处理
   const handleFollowToggle = async () => {
     if (!isLoggedIn) {
       showNotification('请先登录后再关注事件', 'warning');
       return;
     }
 
+    // 防止重复点击
+    if (followLoading) {
+      return;
+    }
+
     setFollowLoading(true);
     
     try {
+      const previousState = isFollowing;
+      
       if (isFollowing) {
         await removeFollow(parseInt(id));
-        setIsFollowing(false);
         showNotification('已取消关注此事件', 'success');
       } else {
         await addFollow(parseInt(id));
-        setIsFollowing(true);
         showNotification('已关注此事件，您将收到相关更新通知', 'success');
       }
+      
+      // 操作成功后重新检查状态，确保同步
+      setTimeout(() => {
+        checkFollowStatus();
+      }, 500); // 给后端一点时间处理
+      
     } catch (err) {
       console.error('关注操作失败:', err);
-      const errorMessage = handleApiError(err);
-      showNotification(errorMessage, 'error');
+      
+      // 特殊处理409冲突错误（已关注状态）
+      if (err.message.includes('Already following')) {
+        setIsFollowing(true);
+        showNotification('您已经关注了此事件', 'info');
+      } else {
+        const errorMessage = handleApiError(err);
+        showNotification(errorMessage, 'error');
+      }
+      
+      // 无论成功失败，都重新检查状态以确保一致性
+      setTimeout(() => {
+        checkFollowStatus();
+      }, 500);
     } finally {
       setFollowLoading(false);
     }
   };
+
+  // 添加页面焦点时重新检查状态
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isLoggedIn && id) {
+        checkFollowStatus();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [id, isLoggedIn]);
 
   if (loading) {
     return (
