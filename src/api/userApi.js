@@ -35,7 +35,18 @@ const apiRequest = async (endpoint, options = {}) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return await response.json();
+    const result = await response.json();
+    
+    // 检查后端返回的响应格式
+    if (result.code === 200 && result.data !== undefined) {
+      return result.data;
+    } else if (result.code !== undefined) {
+      // 如果有错误码但不是200，抛出错误
+      throw new Error(result.message || '请求失败');
+    }
+    
+    // 如果没有标准格式，直接返回原始数据
+    return result;
   } catch (error) {
     console.error('API request failed:', error);
     throw error;
@@ -120,6 +131,33 @@ export const getFollowStats = async () => {
 export const getAvailableEvents = async (params = {}) => {
   const { page = 1, page_size = 10 } = params;
   return await apiRequest(`/follows/events?page=${page}&page_size=${page_size}`);
+};
+
+// ==================== 用户账户管理接口 ====================
+
+// 修改密码
+export const changePassword = async (passwordData) => {
+  return await apiRequest('/user/change-password', {
+    method: 'POST',
+    body: JSON.stringify(passwordData),
+  });
+};
+
+// ==================== 用户信息管理接口 ====================
+
+// 获取用户信息
+export const getUserProfile = async () => {
+  return await apiRequest('/user/profile', {
+    method: 'GET',
+  });
+};
+
+// 更新用户信息
+export const updateUserProfile = async (profileData) => {
+  return await apiRequest('/user/profile', {
+    method: 'PUT',
+    body: JSON.stringify(profileData),
+  });
 };
 
 // ==================== 错误处理 ====================
