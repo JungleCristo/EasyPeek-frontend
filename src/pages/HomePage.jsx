@@ -12,6 +12,7 @@ export default function HomePage() {
   const [featuredNews, setFeaturedNews] = useState([]);
   const [hotNews, setHotNews] = useState([]);
   const [latestNews, setLatestNews] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -31,24 +32,51 @@ export default function HomePage() {
     }
   };
 
-  // 获取所有新闻数据
+  // 获取热点事件数据
+  const fetchEvents = async (endpoint = '') => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/events${endpoint}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error(`Error fetching events${endpoint}:`, error);
+      throw error;
+    }
+  };
+
+  // 获取所有数据
   const fetchAllNews = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const [allNewsData, hotNewsData, latestNewsData] = await Promise.all([
-        fetchNews('', 6), // 获取全部新闻
+      const [latestNewsData, hotNewsData, eventsData] = await Promise.all([
+        fetchNews('/latest', 12), // 获取更多最新新闻用于分配
         fetchNews('/hot', 6), // 获取热门新闻
-        fetchNews('/latest', 6) // 获取最新新闻
+        fetchEvents('/hot'), // 获取热点事件
       ]);
       
-      setFeaturedNews(allNewsData);
+      // 今日焦点：从最新新闻中选择热度最高的6条
+      const featuredNewsData = latestNewsData
+        .sort((a, b) => (b.view_count || 0) - (a.view_count || 0)) // 按热度排序
+        .slice(0, 6);
+      
+      // 全球最新动态：排除已在今日焦点中的新闻
+      const featuredIds = new Set(featuredNewsData.map(news => news.id));
+      const remainingLatestNews = latestNewsData
+        .filter(news => !featuredIds.has(news.id))
+        .slice(0, 6);
+      
+      setFeaturedNews(featuredNewsData);
       setHotNews(hotNewsData);
-      setLatestNews(latestNewsData);
+      setLatestNews(remainingLatestNews);
+      setEvents(eventsData);
     } catch (error) {
-      setError('获取新闻数据失败，请稍后重试');
-      console.error('Error fetching news:', error);
+      setError('获取数据失败，请稍后重试');
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -59,50 +87,7 @@ export default function HomePage() {
     fetchAllNews();
   }, []);
 
-  const events = [
-    { 
-      id: 1, 
-      title: "AI技术发展", 
-      description: "人工智能技术快速发展，各大科技公司竞相布局",
-      created_at: "2024-01-01 00:00",
-      status: "ongoing"
-    },
-    { 
-      id: 2, 
-      title: "气候变化会议", 
-      description: "全球气候变化议题讨论，各国政策制定",
-      created_at: "2023-12-01 00:00",
-      status: "ended"
-    },
-    { 
-      id: 3, 
-      title: "新能源汽车发展", 
-      description: "新能源汽车市场变革，传统车企转型",
-      created_at: "2023-11-15 00:00",
-      status: "ongoing"
-    },
-    { 
-      id: 4, 
-      title: "奥运会举办", 
-      description: "国际体育盛会，各国运动员竞技",
-      created_at: "2024-01-10 00:00",
-      status: "ongoing"
-    },
-    { 
-      id: 5, 
-      title: "全球经济复苏", 
-      description: "后疫情时代全球经济复苏趋势",
-      created_at: "2023-10-01 00:00",
-      status: "ongoing"
-    },
-    { 
-      id: 6, 
-      title: "太空探索计划", 
-      description: "人类太空探索新进展",
-      created_at: "2023-09-01 00:00",
-      status: "ended"
-    },
-  ];
+
   const handlePrevNews = () => {
     setCurrentNewsIndex((prev) => 
       prev === 0 ? featuredNews.length - 1 : prev - 1
@@ -240,26 +225,40 @@ export default function HomePage() {
             <div className="sidebar-card">
               <h3 className="card-title">热点事件</h3>
               <div className="categories-list">
-                {events.map((event) => (
-                  <div key={event.id} className="category-item">
-                    <div className="category-info">
-                      <div 
-                        className="category-dot" 
-                        style={{ backgroundColor: eventStatusConfig[event.status].color }}
-                      />
-                      <span className="category-name">{event.title}</span>
-                    </div>
-                    <span 
-                      className="category-count"
-                      style={{
-                        backgroundColor: eventStatusConfig[event.status].bgColor,
-                        color: eventStatusConfig[event.status].color
-                      }}
-                    >
-                      {eventStatusConfig[event.status].label}
-                    </span>
+                {loading ? (
+                  <div className="loading-message">
+                    <p>加载中...</p>
                   </div>
-                ))}
+                ) : events.length > 0 ? (
+                  events.map((event) => {
+                    const status = event.status || 'ongoing';
+                    const statusConfig = eventStatusConfig[status] || eventStatusConfig['ongoing'];
+                    return (
+                      <div key={event.id} className="category-item">
+                        <div className="category-info">
+                          <div 
+                            className="category-dot" 
+                            style={{ backgroundColor: statusConfig.color }}
+                          />
+                          <span className="category-name">{event.title || event.name}</span>
+                        </div>
+                        <span 
+                          className="category-count"
+                          style={{
+                            backgroundColor: statusConfig.bgColor,
+                            color: statusConfig.color
+                          }}
+                        >
+                          {statusConfig.label}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="no-events-message">
+                    <p>暂无热点事件</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

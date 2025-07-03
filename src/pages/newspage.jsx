@@ -28,6 +28,9 @@ export default function NewsPage() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // 点赞相关状态
+  const [likedComments, setLikedComments] = useState(new Set()); // 存储已点赞的评论ID
+  const [likedCommentsLoading, setLikedCommentsLoading] = useState(new Set()); // 存储正在点赞的评论ID
 
   // 格式化新闻数据，处理字段映射
   const formatNewsData = (rawData) => {
@@ -39,7 +42,6 @@ export default function NewsPage() {
       readCount: rawData.view_count || 0,
       likeCount: rawData.like_count || 0,
       commentCount: rawData.comment_count || 0,
-      followCount: rawData.follow_count || 0,
       tags: Array.isArray(rawData.tags) ? rawData.tags : (rawData.tags ? rawData.tags.split(',').map(tag => tag.trim()) : []),
       aiPrediction: rawData.ai_prediction || "暂无AI预测分析",
       // 格式化时间
@@ -197,15 +199,7 @@ export default function NewsPage() {
     }
   };
 
-  // 解析标签字符串
-  const parseTags = (tagsString) => {
-    if (!tagsString) return [];
-    try {
-      return JSON.parse(tagsString);
-    } catch {
-      return [];
-    }
-  };
+
 
   // 格式化评论数据
   const formatComments = (commentsList) => {
@@ -234,7 +228,7 @@ export default function NewsPage() {
         setComments([]);
         setCommentsTotal(0);
       }
-    } catch (e) {
+    } catch (_) {
       setComments([]);
       setCommentsTotal(0);
     } finally {
@@ -265,7 +259,7 @@ export default function NewsPage() {
       } else {
         alert(result.message || '评论失败');
       }
-    } catch (e) {
+    } catch (_) {
       alert('评论失败');
     } finally {
       setSubmitting(false);
@@ -288,7 +282,7 @@ export default function NewsPage() {
       } else {
         alert(result.message || '删除失败');
       }
-    } catch (e) {
+    } catch (_) {
       alert('删除失败');
     }
   };
@@ -298,6 +292,83 @@ export default function NewsPage() {
     const nextPage = commentsPage + 1;
     setCommentsPage(nextPage);
     fetchComments(id, nextPage, true);
+  };
+
+  // 处理评论点赞
+  const handleLikeComment = async (commentId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('请先登录');
+      return;
+    }
+
+    // 防止重复点击
+    if (likedCommentsLoading.has(commentId)) {
+      return;
+    }
+
+    const isLiked = likedComments.has(commentId);
+    const endpoint = isLiked ? 'DELETE' : 'POST';
+    
+    // 添加调试信息
+    console.log(`点赞操作: 评论ID=${commentId}, 当前状态=${isLiked ? '已点赞' : '未点赞'}, 请求方法=${endpoint}`);
+    
+    try {
+      setLikedCommentsLoading(prev => new Set(prev).add(commentId));
+      
+      const url = `http://localhost:8080/api/v1/comments/${commentId}/like`;
+      console.log(`发送请求到: ${url}`);
+      
+      const response = await fetch(url, {
+        method: endpoint,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log(`响应状态: ${response.status}`);
+      const result = await response.json();
+      console.log(`响应数据:`, result);
+      
+      if (result.code === 200) {
+        // 更新点赞状态
+        setLikedComments(prev => {
+          const newSet = new Set(prev);
+          if (isLiked) {
+            newSet.delete(commentId);
+          } else {
+            newSet.add(commentId);
+          }
+          return newSet;
+        });
+
+        // 更新评论列表中的点赞数
+        setComments(prev => prev.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              like_count: isLiked ? comment.like_count - 1 : comment.like_count + 1
+            };
+          }
+          return comment;
+        }));
+        
+        console.log(`点赞操作成功: ${isLiked ? '取消点赞' : '点赞'}`);
+      } else {
+        console.error(`点赞操作失败: ${result.message}`);
+        alert(result.message || '操作失败');
+      }
+    } catch (error) {
+      console.error('点赞操作失败:', error);
+      alert('网络错误，请稍后重试');
+    } finally {
+      setLikedCommentsLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(commentId);
+        return newSet;
+      });
+    }
   };
 
   // 首次加载和切换新闻时，重置评论
@@ -561,15 +632,6 @@ export default function NewsPage() {
 
           {/* 侧边栏 */}
           <div className="sidebar">
-            {/* 关注按钮 */}
-            <div className="sidebar-card">
-              <div className="follow-section">
-                <button className="follow-btn">
-                  👥 关注此新闻 ({newsData.share_count || 0})
-                </button>
-                <p className="follow-desc">关注后将收到相关新闻提醒</p>
-              </div>
-            </div>
 
             {/* 相关新闻 */}
             <div className="sidebar-card">
@@ -670,35 +732,61 @@ export default function NewsPage() {
                       <div className="comment-content">
                         <div className="comment-author">用户 {comment.user_id}</div>
                         <div className="comment-text">{comment.content}</div>
-                        <div className="comment-time">{comment.created_at}</div>
-                      </div>
-                      {/* 删除按钮，仅显示在自己评论右侧 */}
-                      {currentUserId === comment.user_id && (
-                        <div className="comment-actions">
-                          <span
-                            className="comment-action-dot"
-                            onClick={() => {
-                              setDeleteTargetId(comment.id);
-                              setShowDeleteConfirm(true);
-                            }}
-                          >···</span>
-                          {showDeleteConfirm && deleteTargetId === comment.id && (
-                            <div className="comment-delete-confirm">
-                              <span
-                                className="comment-delete-btn"
-                                onClick={() => {
-                                  setShowDeleteConfirm(false);
-                                  handleDeleteComment(comment.id);
-                                }}
-                              >删除</span>
-                              <span
-                                className="comment-cancel-btn"
-                                onClick={() => setShowDeleteConfirm(false)}
-                              >取消</span>
-                            </div>
-                          )}
+                        <div className="comment-footer">
+                          <div className="comment-time">{comment.created_at}</div>
+                          <div className="comment-actions">
+                            {/* 点赞按钮 */}
+                            <button
+                              className={`comment-like-btn ${likedComments.has(comment.id) ? 'liked' : ''} ${likedCommentsLoading.has(comment.id) ? 'loading' : ''}`}
+                              onClick={() => handleLikeComment(comment.id)}
+                              disabled={likedCommentsLoading.has(comment.id)}
+                            >
+                              <svg 
+                                className="like-icon" 
+                                fill={likedComments.has(comment.id) ? "currentColor" : "none"} 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                  strokeWidth={likedComments.has(comment.id) ? "0" : "2"} 
+                                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                                />
+                              </svg>
+                              <span className="like-count">{comment.like_count || 0}</span>
+                            </button>
+                            
+                            {/* 删除按钮，仅显示在自己评论右侧 */}
+                            {currentUserId === comment.user_id && (
+                              <div className="comment-delete-actions">
+                                <span
+                                  className="comment-action-dot"
+                                  onClick={() => {
+                                    setDeleteTargetId(comment.id);
+                                    setShowDeleteConfirm(true);
+                                  }}
+                                >···</span>
+                                {showDeleteConfirm && deleteTargetId === comment.id && (
+                                  <div className="comment-delete-confirm">
+                                    <span
+                                      className="comment-delete-btn"
+                                      onClick={() => {
+                                        setShowDeleteConfirm(false);
+                                        handleDeleteComment(comment.id);
+                                      }}
+                                    >删除</span>
+                                    <span
+                                      className="comment-cancel-btn"
+                                      onClick={() => setShowDeleteConfirm(false)}
+                                    >取消</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   ))
                 ) : (
