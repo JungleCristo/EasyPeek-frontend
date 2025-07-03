@@ -21,52 +21,118 @@ const GlobalPage = () => {
   const [globalNewsData, setGlobalNewsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allNewsData, setAllNewsData] = useState([]);
+  const [categoryCounts, setCategoryCounts] = useState({});
   const navigate = useNavigate();
 
-  // 新闻分类数据 - 与convert_news.py保持一致
-  const categories = [
-    { id: "all", name: "全部", count: 1234, color: "bg-gray-100" },
-    { id: "politics", name: "政治", count: 234, color: "bg-red-100" },
-    { id: "economy", name: "经济", count: 345, color: "bg-green-100" },
-    { id: "society", name: "社会", count: 289, color: "bg-indigo-100" },
-    { id: "tech", name: "科技", count: 456, color: "bg-blue-100" },
-    { id: "sports", name: "体育", count: 156, color: "bg-orange-100" },
-    { id: "entertainment", name: "娱乐", count: 178, color: "bg-pink-100" },
-    { id: "international", name: "国际", count: 201, color: "bg-cyan-100" },
-    { id: "military", name: "军事", count: 134, color: "bg-slate-100" },
-    { id: "education", name: "教育", count: 67, color: "bg-yellow-100" },
-    { id: "health", name: "健康", count: 89, color: "bg-purple-100" },
-  ];
+  // 新闻分类数据 - 使用动态统计的数量
+  const categories = useMemo(() => [
+    { id: "all", name: "全部", count: categoryCounts.all || 0, color: "bg-gray-100" },
+    { id: "politics", name: "政治", count: categoryCounts.politics || 0, color: "bg-red-100" },
+    { id: "economy", name: "经济", count: categoryCounts.economy || 0, color: "bg-green-100" },
+    { id: "society", name: "社会", count: categoryCounts.society || 0, color: "bg-indigo-100" },
+    { id: "tech", name: "科技", count: categoryCounts.tech || 0, color: "bg-blue-100" },
+    { id: "sports", name: "体育", count: categoryCounts.sports || 0, color: "bg-orange-100" },
+    { id: "entertainment", name: "娱乐", count: categoryCounts.entertainment || 0, color: "bg-pink-100" },
+    { id: "international", name: "国际", count: categoryCounts.international || 0, color: "bg-cyan-100" },
+    { id: "military", name: "军事", count: categoryCounts.military || 0, color: "bg-slate-100" },
+    { id: "education", name: "教育", count: categoryCounts.education || 0, color: "bg-yellow-100" },
+    { id: "health", name: "健康", count: categoryCounts.health || 0, color: "bg-purple-100" },
+  ], [categoryCounts]);
 
-  // 组件加载时获取新闻数据
+  // 组件加载时获取所有新闻数据
   useEffect(() => {
-    fetchNewsByCategory('all', 'latest');
+    fetchAllNews();
   }, []);
 
-  // 当分类或排序改变时重新获取数据
+  // 当获取到所有数据后，根据当前筛选条件过滤数据
   useEffect(() => {
-    if (appliedFilters.category === 'all') {
-      fetchNewsByCategory('all', appliedFilters.sortBy);
-    } else {
+    if (allNewsData.length > 0) {
       fetchNewsByCategory(appliedFilters.category, appliedFilters.sortBy);
     }
-  }, [appliedFilters.category, appliedFilters.sortBy]);
+  }, [allNewsData, appliedFilters.category, appliedFilters.sortBy]);
 
-
-
-  // 根据分类和排序获取新闻数据
-  const fetchNewsByCategory = async (category, sort = 'latest') => {
+  // 获取所有新闻数据
+  const fetchAllNews = async () => {
     try {
       setLoading(true);
-      let url = '';
-      let queryParams = new URLSearchParams();
-      queryParams.append('limit', '50');
+      const response = await fetch('http://localhost:8080/api/v1/news');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
+      const result = await response.json();
+      if (result.code === 200 && result.data) {
+        setAllNewsData(result.data);
+        calculateCategoryCounts(result.data);
+        setError(null);
+      } else {
+        throw new Error(result.message || '获取新闻数据失败');
+      }
+    } catch (error) {
+      console.error('获取新闻失败:', error);
+      setError('获取新闻数据失败，请稍后重试');
+      setAllNewsData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 计算各分类的新闻数量
+  const calculateCategoryCounts = (newsData) => {
+    const categoryMap = {
+      '政治': 'politics',
+      '经济': 'economy', 
+      '社会': 'society',
+      '科技': 'tech',
+      '体育': 'sports',
+      '娱乐': 'entertainment',
+      '国际': 'international',
+      '军事': 'military',
+      '教育': 'education',
+      '健康': 'health'
+    };
+
+    const counts = {
+      all: newsData.length,
+      politics: 0,
+      economy: 0,
+      society: 0,
+      tech: 0,
+      sports: 0,
+      entertainment: 0,
+      international: 0,
+      military: 0,
+      education: 0,
+      health: 0
+    };
+
+    newsData.forEach(news => {
+      if (news.category && categoryMap[news.category]) {
+        counts[categoryMap[news.category]]++;
+      }
+    });
+
+    setCategoryCounts(counts);
+  };
+
+  // 根据分类和排序过滤新闻数据
+  const fetchNewsByCategory = async (category, sort = 'latest') => {
+    try {
+      // 如果还没有获取所有数据，先获取
+      if (allNewsData.length === 0) {
+        await fetchAllNews();
+        return;
+      }
+
+      let filteredData = [...allNewsData];
+
+      // 根据分类过滤
       if (category !== 'all') {
         const categoryMap = {
-          'politics': '政治', 
+          'politics': '政治',
           'economy': '经济',
-          'society': '社会',
+          'society': '社会', 
           'tech': '科技',
           'sports': '体育',
           'entertainment': '娱乐',
@@ -77,36 +143,23 @@ const GlobalPage = () => {
         };
         const categoryName = categoryMap[category];
         if (categoryName) {
-          url = `http://localhost:8080/api/v1/news/category/${encodeURIComponent(categoryName)}`;
-          queryParams.append('sort', sort);
-        }
-      } else {
-        // 全部分类时根据排序方式选择不同端点
-        if (sort === 'hot') {
-          url = 'http://localhost:8080/api/v1/news/hot';
-        } else {
-          url = 'http://localhost:8080/api/v1/news/latest';
+          filteredData = filteredData.filter(news => news.category === categoryName);
         }
       }
-      
-      const response = await fetch(`${url}?${queryParams.toString()}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      if (result.code === 200 && result.data) {
-        setGlobalNewsData(result.data);
-        setError(null);
+
+      // 根据排序方式排序
+      if (sort === 'hot') {
+        // 按热度排序（假设有hotness字段，否则按view_count或其他指标）
+        filteredData.sort((a, b) => (b.view_count || 0) - (a.view_count || 0));
       } else {
-        throw new Error(result.message || '获取新闻数据失败');
+        // 按最新时间排序
+        filteredData.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
       }
+
+      setGlobalNewsData(filteredData);
     } catch (error) {
-      console.error('获取分类新闻失败:', error);
-      setError('获取新闻数据失败，请稍后重试');
-      setGlobalNewsData([]);
-    } finally {
-      setLoading(false);
+      console.error('过滤新闻失败:', error);
+      setError('处理新闻数据失败，请稍后重试');
     }
   };
 
