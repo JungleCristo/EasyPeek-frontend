@@ -70,12 +70,18 @@
   max-width: 520px;
   margin: 0 auto;
   text-align: center;
+  position: relative;
+  padding-top: 120px;
 }
 
-/* 品牌区域 */
+/* 品牌区域 - 重新定位到登录框上方 */
 .login-brand {
-  margin-bottom: 48px;
-  animation: fadeInUp 0.8s ease-out;
+  position: absolute;
+  top: -80px;
+  left: calc(50% - 70px);
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 20;
 }
 
 .login-logo {
@@ -100,11 +106,13 @@
   font-size: 2.8rem;
   font-weight: 700;
   margin: 0 0 12px 0;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
   letter-spacing: -0.02em;
+}
+
+.login-title.light {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .login-title.dark {
@@ -121,8 +129,8 @@
 }
 
 .login-subtitle.light {
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .login-subtitle.dark {
@@ -137,6 +145,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   animation: cardSlideUp 0.8s ease-out 0.2s both;
   min-height: 420px;
+  position: relative;
 }
 
 .login-card.light {
@@ -351,10 +360,11 @@
   
   .login-wrapper {
     max-width: 100%;
+    padding-top: 100px;
   }
   
   .login-brand {
-    margin-bottom: 36px;
+    top: -70px;
   }
   
   .login-title {
@@ -406,6 +416,7 @@
 @media (min-width: 1200px) {
   .login-wrapper {
     max-width: 580px;
+    padding-top: 140px;
   }
   
   .login-card {

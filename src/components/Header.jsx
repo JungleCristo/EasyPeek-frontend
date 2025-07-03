@@ -43,8 +43,8 @@ const Header = () => {
         </nav>
 
         <div className="header-right">
-          <Link to="/admin/login" className="admin-link" title="管理员入口">
-            <span className="admin-icon">⚙️</span>
+          <Link to="/admin/login" title="管理员入口">
+            ⚙️
           </Link>
           {isLoggedIn ? (
             <>
