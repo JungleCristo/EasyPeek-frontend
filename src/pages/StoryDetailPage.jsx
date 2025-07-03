@@ -369,7 +369,7 @@ const StoryDetailPage = () => {
         {/* 时间线控制 */}
         <div className="timeline-controls">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>新闻时间线</h2>
+          <h2>新闻时间线</h2>
             <button 
               onClick={() => {
                 fetchEventNews();
@@ -457,47 +457,47 @@ const StoryDetailPage = () => {
 
           {!newsLoading && !newsError && (
             <>
-              <div className="timeline-line"></div>
-              
-              {currentNews.map((news, index) => (
+          <div className="timeline-line"></div>
+          
+          {currentNews.map((news, index) => (
                 <div key={news.id} className="timeline-news-item">
-                  <div className="timeline-news-marker">
-                    <span className="news-type-icon">{getNewsTypeIcon(news.type)}</span>
-                  </div>
-                  
+              <div className="timeline-news-marker">
+                <span className="news-type-icon">{getNewsTypeIcon(news.type)}</span>
+              </div>
+              
                   <Link to={`/newspage/${news.id}`} className="news-card-link">
-                    <div className="news-card">
-                      <div className="news-header">
-                        <div className="news-meta">
-                          <span className="news-date">{formatDate(news.date)}</span>
-                          <span className="news-time">{news.time}</span>
-                          <span className={`news-type ${news.type}`}>
-                            {news.type === 'major' ? '重大事件' : '一般事件'}
-                          </span>
-                        </div>
-                        <div className="news-impact" style={{color: getImpactColor(news.impact)}}>
-                          影响: {news.impact}
-                        </div>
-                      </div>
-                      
-                      <h3 className="news-title">
+              <div className="news-card">
+                <div className="news-header">
+                  <div className="news-meta">
+                    <span className="news-date">{formatDate(news.date)}</span>
+                    <span className="news-time">{news.time}</span>
+                    <span className={`news-type ${news.type}`}>
+                      {news.type === 'major' ? '重大事件' : '一般事件'}
+                    </span>
+                  </div>
+                  <div className="news-impact" style={{color: getImpactColor(news.impact)}}>
+                    影响: {news.impact}
+                  </div>
+                </div>
+                
+                <h3 className="news-title">
                         {news.title}
-                      </h3>
-                      
-                      <p className="news-summary">{news.summary}</p>
-                      
-                      <div className="news-footer">
-                        <div className="news-source">
-                          <span>来源: {news.source}</span>
-                        </div>
-                        <div className="news-related">
-                          <span>{news.relatedNews} 条相关新闻</span>
-                        </div>
-                      </div>
+                </h3>
+                
+                <p className="news-summary">{news.summary}</p>
+                
+                <div className="news-footer">
+                  <div className="news-source">
+                    <span>来源: {news.source}</span>
+                  </div>
+                  <div className="news-related">
+                    <span>{news.relatedNews} 条相关新闻</span>
+                  </div>
+                </div>
                     </div>
                   </Link>
-                </div>
-              ))}
+            </div>
+          ))}
             </>
           )}
         </div>

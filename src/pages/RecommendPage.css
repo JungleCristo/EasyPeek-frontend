@@ -542,6 +542,35 @@ body.dark .recommend-container::before {
   opacity: 0.5;
 }
 
+/* 空事件状态 */
+.empty-events {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+}
+
+.empty-events .empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.4;
+}
+
+.empty-events h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 8px 0;
+}
+
+.empty-events p {
+  font-size: 0.9rem;
+  margin: 0;
+  opacity: 0.7;
+}
+
 /* 推荐新闻区域 */
 .recommend-news-section {
   background: rgba(255, 255, 255, 0.1);
@@ -948,4 +977,9 @@ body.dark .setting-btn:hover {
 body.dark .setting-btn.active {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.4);
+}
+
+body.dark .empty-events {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
 }

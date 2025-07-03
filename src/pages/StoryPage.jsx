@@ -11,7 +11,7 @@ export default function StoryPage() {
   const [sortBy, setSortBy] = useState('latest');
   const [currentPage, setCurrentPage] = useState(1);
   const [storiesPerPage] = useState(4); // 每页显示4个故事
-  
+
   // 新增状态管理
   const [stories, setStories] = useState([]);
   const [categories, setCategories] = useState(['all']);
@@ -43,18 +43,18 @@ export default function StoryPage() {
     try {
       // 映射前端排序参数到后端参数
       const getSortParam = () => {
-        switch (sortBy) {
-          case 'latest':
+      switch (sortBy) {
+        case 'latest':
             return 'time';
-          case 'oldest':
+        case 'oldest':
             return 'time';
           case 'hotness':
             return 'hotness';
           case 'views':
             return 'views';
-          default:
+        default:
             return 'time';
-        }
+      }
       };
 
       const params = new URLSearchParams({
@@ -192,7 +192,7 @@ export default function StoryPage() {
   // 当筛选条件改变时重置到第一页
   useEffect(() => {
     if (currentPage !== 1) {
-      setCurrentPage(1);
+    setCurrentPage(1);
     }
   }, [searchQuery, selectedCategory, sortBy]);
 
@@ -321,59 +321,59 @@ export default function StoryPage() {
             {formattedStories.map((story, index) => (
               <div key={story.id} className="story-item">
                 <div className="story-timeline-marker">
-                  <span className="timeline-icon">{story.thumbnail}</span>
-                </div>
-                
+                <span className="timeline-icon">{story.thumbnail}</span>
+              </div>
+              
                 <Link to={`/story/${story.id}`} className="story-card-horizontal-link">
                   <div className="story-card-horizontal">
                     {/* 左侧：标题和数据 */}
                     <div className="story-content-left">
-                      <div className="story-header">
-                        <div className="story-meta">
-                          <span className="story-category">{story.category}</span>
-                          <span 
-                            className="story-status"
-                            style={{ backgroundColor: getStatusColor(story.status) }}
-                          >
-                            {getStatusText(story.status)}
-                          </span>
-                          <span 
-                            className="story-importance"
-                            style={{ color: getImportanceColor(story.importance) }}
-                          >
-                            {story.importance === 'high' ? '🔥 重要' : story.importance === 'medium' ? '⚡ 一般' : '📝 普通'}
-                          </span>
-                        </div>
-                        <div className="story-date">
-                          {story.startDate} - {story.lastUpdate}
-                        </div>
-                      </div>
+                <div className="story-header">
+                  <div className="story-meta">
+                    <span className="story-category">{story.category}</span>
+                    <span 
+                      className="story-status"
+                      style={{ backgroundColor: getStatusColor(story.status) }}
+                    >
+                      {getStatusText(story.status)}
+                    </span>
+                    <span 
+                      className="story-importance"
+                      style={{ color: getImportanceColor(story.importance) }}
+                    >
+                      {story.importance === 'high' ? '🔥 重要' : story.importance === 'medium' ? '⚡ 一般' : '📝 普通'}
+                    </span>
+                  </div>
+                  <div className="story-date">
+                    {story.startDate} - {story.lastUpdate}
+                  </div>
+                </div>
 
-                      <h3 className="story-title">
+                <h3 className="story-title">
                         {story.title}
-                      </h3>
-                      
-                      <p className="story-description">{story.description}</p>
-                      
-                      <div className="story-stats">
-                        <span className="news-count">📰 {story.newsCount} 条新闻</span>
+                </h3>
+                
+                <p className="story-description">{story.description}</p>
+                
+                <div className="story-stats">
+                  <span className="news-count">📰 {story.newsCount} 条新闻</span>
                         <span className="view-count">👁️ {story.viewCount} 浏览</span>
                         <span className="hotness-score">🔥 热度 {(story.hotnessScore || 0).toFixed(1)}</span>
                         <span className="interaction-count">❤️ {story.likeCount} 👥 {story.commentCount}</span>
-                      </div>
+                </div>
 
-                      <div className="story-tags">
-                        {story.tags.map(tag => (
-                          <span key={tag} className="story-tag">#{tag}</span>
-                        ))}
+                <div className="story-tags">
+                  {story.tags.map(tag => (
+                    <span key={tag} className="story-tag">#{tag}</span>
+                  ))}
                       </div>
-                    </div>
+                </div>
 
                     {/* 右侧：时间线 */}
                     <div className="story-timeline-right">
-                      <div className="story-preview-timeline">
+                <div className="story-preview-timeline">
                         <h4>事件时间线</h4>
-                        <div className="mini-timeline">
+                  <div className="mini-timeline">
                           <div className="mini-timeline-item">
                             <div className="mini-timeline-dot"></div>
                             <div className="mini-timeline-content">
@@ -399,12 +399,12 @@ export default function StoryPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                      </div>
                   </div>
-                </Link>
-              </div>
-            ))}
-          </div>
+                  </Link>
+            </div>
+          ))}
+        </div>
         )}
 
         {/* 无结果状态 */}

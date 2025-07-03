@@ -57,7 +57,14 @@ export default function RecommendPage() {
         if (eventsData.length > 0) {
           setSelectedEvent(eventsData[0]);
           fetchEventNews(eventsData[0].id);
+        } else {
+          setSelectedEvent(null);
+          setEventNews([]);
         }
+      } else {
+        setEvents([]);
+        setSelectedEvent(null);
+        setEventNews([]);
       }
     } catch (err) {
       console.error('获取事件数据失败:', err);
@@ -108,6 +115,9 @@ export default function RecommendPage() {
       if (filteredEvents.length > 0) {
         setSelectedEvent(filteredEvents[0]);
         fetchEventNews(filteredEvents[0].id);
+      } else {
+        setSelectedEvent(null);
+        setEventNews([]);
       }
     }
   };
@@ -430,7 +440,7 @@ export default function RecommendPage() {
             </div>
 
             {/* 选中事件的新闻 - 在事件下方 */}
-            {selectedEvent && (
+            {selectedEvent && events.length > 0 && (
               <div className="event-news-section">
                 <div className="event-news-header">
                   <h2 className="event-news-title">
@@ -457,6 +467,15 @@ export default function RecommendPage() {
                     <p>该事件暂无相关新闻</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* 事件列表为空时的提示 */}
+            {events.length === 0 && (
+              <div className="empty-events">
+                <div className="empty-icon">📅</div>
+                <h3>暂无热门事件</h3>
+                <p>当前筛选条件下没有找到相关事件</p>
               </div>
             )}
           </div>
