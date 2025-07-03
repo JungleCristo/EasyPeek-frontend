@@ -64,7 +64,7 @@ const GlobalPage = () => {
       
       if (category !== 'all') {
         const categoryMap = {
-          'politics': '政治',
+          'politics': '政治', 
           'economy': '经济',
           'society': '社会',
           'tech': '科技',
