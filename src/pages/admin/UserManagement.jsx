@@ -292,8 +292,8 @@ const UserManagement = () => {
                                     placeholder="搜索用户名或邮箱"
                                     allowClear
                                     onSearch={handleSearch}
-                                    style={{ width: 250 }}
-                                    enterButton={<SearchOutlined />}
+                                    className="admin-search-input"
+                                    enterButton={<SearchOutlined style={{ fontSize: 18 }} />}
                                 />
                                 <Select
                                     placeholder="角色筛选"
@@ -440,4 +440,4 @@ const UserManagement = () => {
     );
 };
 
-export default UserManagement; 
+export default UserManagement;
