@@ -79,7 +79,7 @@ const AdminDashboard = () => {
             title: 'RSS管理',
             description: '管理RSS源和抓取任务',
             icon: '📡',
-            link: '/admin/rss-sources',
+            link: '/admin/rss',
             color: 'orange'
         }
     ];
