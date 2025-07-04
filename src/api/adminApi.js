@@ -24,21 +24,21 @@ const apiRequest = async (endpoint, options = {}) => {
             ...options
         };
 
-        const response = await fetch(url, config);
-        const data = await response.json();
+        const Response = await fetch(url, config);
+        const response = await Response.json();
 
-        if (!response.ok) {
-            throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+        if (!Response.ok) {
+            throw new Error(response.error || response.message || `HTTP error! status: ${Response.status}`);
         }
 
-        return data;
+        return response;
     } catch (error) {
         console.error('API request failed:', error);
         throw error;
     }
 };
 
-// admin authentication
+// admin login
 export const adminLogin = async (credentials) => {
     try {
         const Response = await fetch(`${API_BASE_URL}/auth/admin-login`, {
@@ -58,7 +58,7 @@ export const adminLogin = async (credentials) => {
         // save token and user info to localStorage
         if (response.data && response.data.token) {
             localStorage.setItem('admin_token', response.data.token);
-            localStorage.setItem('admin_user', JSON.stringify(response.data.user));
+            localStorage.setItem('user_info', JSON.stringify(response.data.user));
         }
 
         return response;
@@ -68,6 +68,7 @@ export const adminLogin = async (credentials) => {
     }
 };
 
+// admin logout 
 export const adminLogout = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/admin-logout`, {
@@ -76,19 +77,19 @@ export const adminLogout = async () => {
         });
 
         if (!response.ok) {
-            console.warn('Logout API call failed with status:', response.status);
+            console.warn('Logout failed with status:', response.status);
         }
     } catch (error) {
-        console.warn('Logout API call failed:', error);
+        console.warn('Logout failed:', error);
     } finally {
         localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
+        localStorage.removeItem('user_info');
     }
 };
 
 export const checkAdminAuth = () => {
     const token = getAuthToken();
-    const user = localStorage.getItem('admin_user');
+    const user = localStorage.getItem('user_info');
 
     if (!token || !user) {
         return { isAuthenticated: false, user: null };
@@ -110,7 +111,7 @@ export const checkAdminAuth = () => {
 
 export const getCurrentAdminUser = () => {
     try {
-        const user = localStorage.getItem('admin_user');
+        const user = localStorage.getItem('user_info');
         return user ? JSON.parse(user) : null;
     } catch (error) {
         console.error('Error getting current admin user:', error);
@@ -119,14 +120,20 @@ export const getCurrentAdminUser = () => {
 };
 
 
-// done
-// get system statistics
 export const getSystemStats = async () => {
     return await apiRequest('/stats');
 };
 
 
-// user 
+// user management
+
+// 分页方式展示用户列表
+// 用户列表显示 用户id 头像 用户名 邮箱 角色 状态 创建时间 操作(编辑 删除)
+// 可以按照一定方式排序 筛选
+// 用户搜索 by username or email
+// 管理员创建用户
+
+// todo
 export const getUsers = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
@@ -149,13 +156,6 @@ export const getUserById = async (id) => {
     return await apiRequest(`/users/${id}`);
 };
 
-// 注意：后端没有提供创建用户的管理员接口，移除此函数
-// export const createUser = async (userData) => {
-//     return await apiRequest('/users', {
-//         method: 'POST',
-//         body: JSON.stringify(userData)
-//     });
-// };
 
 export const updateUser = async (id, userData) => {
     return await apiRequest(`/users/${id}`, {
@@ -317,34 +317,12 @@ export const getRssStats = async () => {
     return await apiRequest('/rss/stats');
 };
 
-// ==================== 系统管理功能 ====================
-
-// 获取所有RSS源（管理员视图）- 与getRssSources功能相同，但为了语义清晰保留
-export const getAllRssSources = async (params = {}) => {
-    return await getRssSources(params);
-};
-
-// 获取所有事件（管理员视图）- 与getEvents功能相同，但为了语义清晰保留
-export const getAllEvents = async (params = {}) => {
-    return await getEvents(params);
-};
-
-// 获取所有新闻（管理员视图）- 与getNews功能相同，但为了语义清晰保留
-export const getAllNews = async (params = {}) => {
-    return await getNews(params);
-};
-
-// 获取所有用户（管理员视图）- 与getUsers功能相同，但为了语义清晰保留
-export const getAllUsers = async (params = {}) => {
-    return await getUsers(params);
-};
 
 // ==================== 错误处理 ====================
 export const handleApiError = (error) => {
     console.error('API Error:', error);
 
     if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-        // Token过期或无效，跳转到登录页
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
         window.location.href = '/admin/login';
@@ -372,7 +350,6 @@ export default {
 
     // 用户管理
     getUsers,
-    getAllUsers,
     getUserById,
     // createUser, // 后端未提供此接口
     updateUser,
@@ -382,7 +359,6 @@ export default {
 
     // RSS源管理
     getRssSources,
-    getAllRssSources,
     createRssSource,
     updateRssSource,
     deleteRssSource,
@@ -393,13 +369,11 @@ export default {
 
     // 事件管理
     getEvents,
-    getAllEvents,
     updateEvent,
     deleteEvent,
 
     // 新闻管理
     getNews,
-    getAllNews,
     updateNews,
     deleteNews,
 

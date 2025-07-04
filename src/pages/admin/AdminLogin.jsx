@@ -49,7 +49,7 @@ const AdminLogin = () => {
                             onClick={handleBackToSite}
                             className="back-btn"
                         >
-                            ←  返回主站
+                            ← 返回主站
                         </Button>
                     </div>
                     <div className="theme-toggle-wrapper">
@@ -63,8 +63,8 @@ const AdminLogin = () => {
                             <div className="admin-icon">
                                 <CrownOutlined />
                             </div>
-                            <h1 className="login-title">管理员登录</h1>
-                            <p className="login-subtitle">EasyPeek 管理控制台</p>
+                            <h1 className="login-title">后台登录</h1>
+                            <p className="login-subtitle">EasyPeek 后台控制台</p>
                         </div>
 
                         <Form
@@ -108,7 +108,7 @@ const AdminLogin = () => {
                                     block
                                     className="login-button"
                                 >
-                                    登录管理后台
+                                    登录
                                 </Button>
                             </Form.Item>
                         </Form>

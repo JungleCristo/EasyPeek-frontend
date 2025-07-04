@@ -168,23 +168,21 @@ const UserManagement = () => {
 
     const getRoleTag = (role) => {
         const roleConfig = {
-            user: { color: 'blue', text: '普通用户' },
+            user: { color: 'blue', text: '用户' },
             admin: { color: 'purple', text: '管理员' },
-            system: { color: 'red', text: '系统管理员' }
         };
         const config = roleConfig[role] || { color: 'default', text: role };
         return <Tag color={config.color}>{config.text}</Tag>;
     };
 
     const columns = [
-        {
-            title: '用户ID',
+        { // id
+            title: 'ID',
             dataIndex: 'id',
             key: 'id',
             width: 100,
-            sorter: true
         },
-        {
+        { // avatar
             title: '头像',
             dataIndex: 'avatar',
             key: 'avatar',
@@ -201,44 +199,32 @@ const UserManagement = () => {
                 </div>
             )
         },
-        {
+        { // username
             title: '用户名',
             dataIndex: 'username',
             key: 'username',
-            sorter: true
         },
-        {
+        { //email
             title: '邮箱',
             dataIndex: 'email',
             key: 'email'
         },
-        {
+        { // role
             title: '角色',
             dataIndex: 'role',
             key: 'role',
-            render: (role) => getRoleTag(role),
-            filters: [
-                { text: '普通用户', value: 'user' },
-                { text: '管理员', value: 'admin' },
-                { text: '系统管理员', value: 'system' }
-            ]
+            render: (role) => getRoleTag(role)
         },
         {
             title: '状态',
             dataIndex: 'status',
             key: 'status',
-            render: (status) => getStatusTag(status),
-            filters: [
-                { text: '活跃', value: 'active' },
-                { text: '非活跃', value: 'inactive' },
-                { text: '已封禁', value: 'suspended' }
-            ]
+            render: (status) => getStatusTag(status)
         },
         {
             title: '创建时间',
             dataIndex: 'created_at',
             key: 'created_at',
-            sorter: true,
             render: (date) => new Date(date).toLocaleString('zh-CN')
         },
         {
@@ -278,7 +264,7 @@ const UserManagement = () => {
             <div className="admin-content">
                 <div className="page-header">
                     <h1 className="page-title">用户管理</h1>
-                    <p className="page-subtitle">管理系统用户和权限设置</p>
+                    <p className="page-subtitle">平台用户管理和权限设置</p>
                 </div>
 
                 <div className="content-card">
@@ -287,9 +273,9 @@ const UserManagement = () => {
                             <h2>用户列表</h2>
                         </div>
                         <div className="header-right">
-                            <Space>
+                            <Space align="center" size="middle">
                                 <Search
-                                    placeholder="搜索用户名或邮箱"
+                                    placeholder=""
                                     allowClear
                                     onSearch={handleSearch}
                                     className="admin-search-input"

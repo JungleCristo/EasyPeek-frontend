@@ -35,7 +35,7 @@ const AdminHeader = () => {
     const navItems = [
         { path: '/admin', label: '控制台', icon: '🏠' },
         { path: '/admin/users', label: '用户管理', icon: '👥' },
-        { path: '/admin/rss-sources', label: 'RSS管理', icon: '📡' },
+        { path: '/admin/rss', label: 'RSS管理', icon: '📡' },
         { path: '/admin/news', label: '新闻管理', icon: '📰' },
         { path: '/admin/events', label: '事件管理', icon: '📅' }
     ];
