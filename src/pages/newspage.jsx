@@ -176,6 +176,7 @@ export default function NewsPage() {
          if (result.code === 200 && result.data) {
            const formattedData = formatNewsData(result.data);
            setNewsData(formattedData);
+           setLikeCount(result.data.like_count || 0); // 设置点赞数
            setError(null);
            
            // 增加浏览量（异步调用，不影响页面加载）
@@ -200,6 +201,7 @@ export default function NewsPage() {
 
     fetchNewsData();
     fetchCategories(); // 获取分类列表
+    fetchLikeStatus(); // 获取点赞状态
   }, [id]);
 
   // 当筛选条件改变时重新获取相关新闻
