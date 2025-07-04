@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { safeDisplayText, safeDisplayTitle, splitIntoParagraphs } from '../utils/htmlUtils';
 import { getCategoryNames } from '../utils/statusConfig';
+import { newsApi } from '../api/newsApi';
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
 import "./newspage.css";
@@ -13,6 +14,11 @@ export default function NewsPage() {
   const [newsData, setNewsData] = useState(null);
   const [relatedNews, setRelatedNews] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  
+  // 点赞相关状态
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
   
   // 筛选相关状态
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -171,6 +177,16 @@ export default function NewsPage() {
            const formattedData = formatNewsData(result.data);
            setNewsData(formattedData);
            setError(null);
+           
+           // 增加浏览量（异步调用，不影响页面加载）
+           fetch(`http://localhost:8080/api/v1/news/${id}/view`, {
+             method: 'POST',
+             headers: {
+               'Content-Type': 'application/json'
+             }
+           }).catch(err => {
+             console.log('记录浏览量失败:', err);
+           });
          } else {
            throw new Error(result.message || '获取新闻详情失败');
          }
@@ -193,6 +209,14 @@ export default function NewsPage() {
     }
   }, [selectedCategory, sortBy, id]);
 
+  // 当新闻数据加载完成后，获取点赞状态并初始化点赞数
+  useEffect(() => {
+    if (newsData) {
+      setLikeCount(newsData.like_count || 0);
+      fetchLikeStatus();
+    }
+  }, [newsData?.id]);
+
   // 格式化时间显示
   const formatTime = (timeString) => {
     if (!timeString) return '';
@@ -207,6 +231,56 @@ export default function NewsPage() {
       });
     } catch {
       return timeString;
+    }
+  };
+
+  // 检查用户是否已登录
+  const isLoggedIn = () => {
+    return localStorage.getItem('token') !== null;
+  };
+
+  // 获取点赞状态
+  const fetchLikeStatus = async () => {
+    if (!isLoggedIn() || !id) return;
+    
+    try {
+      const response = await newsApi.getLikeStatus(id);
+      if (response.success) {
+        setIsLiked(response.data.is_liked);
+      }
+    } catch (error) {
+      console.log('获取点赞状态失败:', error);
+    }
+  };
+
+  // 处理点赞操作
+  const handleLike = async () => {
+    if (!isLoggedIn()) {
+      alert('请先登录后再点赞');
+      return;
+    }
+
+    if (likeLoading) return;
+    
+    setLikeLoading(true);
+    
+    try {
+      const response = await newsApi.likeNews(id);
+      if (response.success) {
+        setIsLiked(response.data.is_liked);
+        setLikeCount(response.data.like_count);
+        
+        // 更新newsData中的点赞数
+        setNewsData(prev => ({
+          ...prev,
+          like_count: response.data.like_count
+        }));
+      }
+    } catch (error) {
+      console.error('点赞操作失败:', error);
+      alert('点赞操作失败，请稍后重试');
+    } finally {
+      setLikeLoading(false);
     }
   };
 
@@ -668,13 +742,19 @@ export default function NewsPage() {
                     <span className="stat-value">{newsData.view_count || 0}</span>
                     <span className="stat-label">阅读量</span>
                   </div>
-                  <div className="stat-item">
-                    <svg className="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* 可交互的点赞按钮 */}
+                  <button 
+                    className={`stat-item like-button ${isLiked ? 'liked' : ''} ${likeLoading ? 'loading' : ''}`}
+                    onClick={handleLike}
+                    disabled={likeLoading}
+                    title={isLiked ? '取消点赞' : '点赞'}
+                  >
+                    <svg className="stat-icon" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
-                    <span className="stat-value">{newsData.like_count || 0}</span>
+                    <span className="stat-value">{likeCount}</span>
                     <span className="stat-label">点赞数</span>
-                  </div>
+                  </button>
                   <div className="stat-item">
                     <svg className="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
