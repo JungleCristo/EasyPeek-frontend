@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { getCategoryNames } from '../../utils/statusConfig';
 import Header from '../../components/Header';
 import ThemeToggle from '../../components/ThemeToggle';
 
@@ -711,7 +712,7 @@ const ProfilePage = () => {
                     <div className="settings-section">
                       <h3>兴趣偏好</h3>
                       <div className="categories-grid">
-                        {["科技", "政治", "经济", "社会", "健康", "教育", "体育", "娱乐", "军事", "国际"].map((category) => (
+                        {getCategoryNames().map((category) => (
                           <label key={category} className="checkbox-item">
                             <input
                               type="checkbox"
