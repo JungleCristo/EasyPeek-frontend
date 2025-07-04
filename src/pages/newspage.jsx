@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { safeDisplayText, safeDisplayTitle, splitIntoParagraphs } from '../utils/htmlUtils';
+import { getCategoryNames } from '../utils/statusConfig';
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
 import "./newspage.css";
@@ -88,7 +89,8 @@ export default function NewsPage() {
       }
     } catch (error) {
       console.error('获取分类失败:', error);
-      setAllCategories(['科技', '政治', '经济', '环境', '医疗', '教育']); // 默认分类
+      // 使用配置文件中的分类作为默认值
+      setAllCategories(getCategoryNames());
     }
   };
 

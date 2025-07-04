@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
+import { getAllCategories, getCategoryConfig, getCategoryNames } from '../utils/statusConfig';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import './global.css';
@@ -26,20 +27,52 @@ const GlobalPage = () => {
   const [categoryCounts, setCategoryCounts] = useState({});
   const navigate = useNavigate();
 
-  // 新闻分类数据 - 使用动态统计的数量
-  const categories = useMemo(() => [
-    { id: "all", name: "全部", count: categoryCounts.all || 0, color: "bg-gray-100" },
-    { id: "politics", name: "政治", count: categoryCounts.politics || 0, color: "bg-red-100" },
-    { id: "economy", name: "经济", count: categoryCounts.economy || 0, color: "bg-green-100" },
-    { id: "society", name: "社会", count: categoryCounts.society || 0, color: "bg-indigo-100" },
-    { id: "tech", name: "科技", count: categoryCounts.tech || 0, color: "bg-blue-100" },
-    { id: "sports", name: "体育", count: categoryCounts.sports || 0, color: "bg-orange-100" },
-    { id: "entertainment", name: "娱乐", count: categoryCounts.entertainment || 0, color: "bg-pink-100" },
-    { id: "international", name: "国际", count: categoryCounts.international || 0, color: "bg-cyan-100" },
-    { id: "military", name: "军事", count: categoryCounts.military || 0, color: "bg-slate-100" },
-    { id: "education", name: "教育", count: categoryCounts.education || 0, color: "bg-yellow-100" },
-    { id: "health", name: "健康", count: categoryCounts.health || 0, color: "bg-purple-100" },
-  ], [categoryCounts]);
+  // 使用配置文件生成分类列表
+  const categories = useMemo(() => {
+    const allCategories = getAllCategories();
+    return [
+      { id: "all", name: "全部", count: allNewsData.length, color: "bg-gray-100" },
+      ...allCategories.map(config => ({
+        id: config.id,
+        name: config.name,
+        count: categoryCounts[config.id] || 0,
+        color: config.bgColor
+      }))
+    ];
+  }, [allNewsData.length, categoryCounts]);
+
+  // 移除旧的硬编码映射，使用配置文件
+  const categoryMapping = useMemo(() => {
+    const mapping = {};
+    const allCategories = getAllCategories();
+    
+    allCategories.forEach(config => {
+      mapping[config.name] = config.id;
+    });
+    
+    return mapping;
+  }, []);
+
+  const reverseCategoryMapping = useMemo(() => {
+    const mapping = {};
+    const allCategories = getAllCategories();
+    
+    allCategories.forEach(config => {
+      mapping[config.id] = config.name;
+    });
+    
+    return mapping;
+  }, []);
+
+  // 事件标签配置保持不变
+  const eventConfig = {
+    "气候变化会议": { label: "气候变化会议", bgColor: "rgba(16, 185, 129, 0.9)" },
+    "美国大选": { label: "美国大选", bgColor: "rgba(239, 68, 68, 0.9)" },
+    "欧洲经济政策": { label: "欧洲经济政策", bgColor: "rgba(59, 130, 246, 0.9)" },
+    "福岛核电站": { label: "福岛核电站", bgColor: "rgba(245, 158, 11, 0.9)" },
+    "太空探索": { label: "太空探索", bgColor: "rgba(139, 92, 246, 0.9)" },
+    "雨林保护": { label: "雨林保护", bgColor: "rgba(34, 197, 94, 0.9)" },
+  };
 
   // 组件加载时获取所有新闻数据
   useEffect(() => {
@@ -81,36 +114,21 @@ const GlobalPage = () => {
 
   // 计算各分类的新闻数量
   const calculateCategoryCounts = (newsData) => {
-    const categoryMap = {
-      '政治': 'politics',
-      '经济': 'economy', 
-      '社会': 'society',
-      '科技': 'tech',
-      '体育': 'sports',
-      '娱乐': 'entertainment',
-      '国际': 'international',
-      '军事': 'military',
-      '教育': 'education',
-      '健康': 'health'
-    };
+    const allCategories = getAllCategories();
+    const counts = { all: newsData.length };
+    
+    // 初始化所有分类计数为0
+    allCategories.forEach(config => {
+      counts[config.id] = 0;
+    });
 
-    const counts = {
-      all: newsData.length,
-      politics: 0,
-      economy: 0,
-      society: 0,
-      tech: 0,
-      sports: 0,
-      entertainment: 0,
-      international: 0,
-      military: 0,
-      education: 0,
-      health: 0
-    };
-
+    // 统计每个分类的新闻数量
     newsData.forEach(news => {
-      if (news.category && categoryMap[news.category]) {
-        counts[categoryMap[news.category]]++;
+      if (news.category) {
+        const config = getCategoryConfig(news.category);
+        if (config && counts.hasOwnProperty(config.id)) {
+          counts[config.id]++;
+        }
       }
     });
 
@@ -130,21 +148,9 @@ const GlobalPage = () => {
 
       // 根据分类过滤
       if (!categories.includes('all')) {
-        const categoryMap = {
-          'politics': '政治',
-          'economy': '经济',
-          'society': '社会', 
-          'tech': '科技',
-          'sports': '体育',
-          'entertainment': '娱乐',
-          'international': '国际',
-          'military': '军事',
-          'education': '教育',
-          'health': '健康'
-        };
         filteredData = filteredData.filter(news => {
           return categories.some(category => {
-            const categoryName = categoryMap[category];
+            const categoryName = reverseCategoryMapping[category];
             return categoryName && news.category === categoryName;
           });
         });
@@ -166,16 +172,6 @@ const GlobalPage = () => {
     }
   };
 
-  // 所属事件配置 - 复用HomePage.jsx的配置方式
-  const eventConfig = {
-    "气候变化会议": { label: "气候变化会议", bgColor: "rgba(16, 185, 129, 0.9)" },
-    "美国大选": { label: "美国大选", bgColor: "rgba(239, 68, 68, 0.9)" },
-    "欧洲经济政策": { label: "欧洲经济政策", bgColor: "rgba(59, 130, 246, 0.9)" },
-    "福岛核电站": { label: "福岛核电站", bgColor: "rgba(245, 158, 11, 0.9)" },
-    "太空探索": { label: "太空探索", bgColor: "rgba(139, 92, 246, 0.9)" },
-    "雨林保护": { label: "雨林保护", bgColor: "rgba(34, 197, 94, 0.9)" },
-  };
-
   // 处理新闻点击事件 - 复用HomePage.jsx的逻辑
   const handleNewsClick = (newsId) => {
     navigate(`/newspage/${newsId}`);
@@ -185,8 +181,6 @@ const GlobalPage = () => {
   const handleSearchClick = () => {
     navigate('/search');
   };
-
-
 
   // 应用筛选
   const applyFilters = () => {
@@ -220,21 +214,9 @@ const GlobalPage = () => {
     // 按分类筛选
     if (!appliedFilters.categories.includes('all')) {
       filtered = filtered.filter(news => {
-        const categoryMap = {
-          'politics': '政治',
-          'economy': '经济',
-          'society': '社会',
-          'tech': '科技',
-          'sports': '体育',
-          'entertainment': '娱乐',
-          'international': '国际',
-          'military': '军事',
-          'education': '教育',
-          'health': '健康'
-        };
         // 检查新闻分类是否在选中的分类列表中
         return appliedFilters.categories.some(selectedCat => 
-          news.category === categoryMap[selectedCat]
+          news.category === reverseCategoryMapping[selectedCat]
         );
       });
     }
