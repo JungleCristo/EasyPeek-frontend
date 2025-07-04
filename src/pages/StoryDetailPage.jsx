@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { safeDisplayText } from '../utils/htmlUtils';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import { addFollow, removeFollow, checkFollow, handleApiError } from '../api/userApi';
@@ -176,8 +177,8 @@ const StoryDetailPage = () => {
         date: publishedDate.toISOString().split('T')[0],
         time: publishedDate.toTimeString().slice(0, 5),
         type: type,
-        title: news.title,
-        summary: news.summary || news.description || (news.content ? news.content.substring(0, 150) + '...' : ''),
+        title: safeDisplayText(news.title),
+        summary: safeDisplayText(news.summary || news.description || news.content, 150),
         source: news.source,
         impact: impact,
         relatedNews: 1 // 每条新闻本身就是一条相关新闻
@@ -474,12 +475,12 @@ const StoryDetailPage = () => {
               </div>
             </div>
             
-            <h1 className="story-detail-title">{formattedStory.title}</h1>
-            <p className="story-detail-description">{formattedStory.description}</p>
+            <h1 className="story-detail-title">{safeDisplayText(formattedStory.title)}</h1>
+            <p className="story-detail-description">{safeDisplayText(formattedStory.description, 300)}</p>
             
             <div className="story-summary">
-              <h3>故事概要</h3>
-              <p>{formattedStory.summary}</p>
+              <h2>事件摘要</h2>
+              <p>{safeDisplayText(formattedStory.summary, 500)}</p>
             </div>
             
             <div className="story-stats-row">
