@@ -248,51 +248,73 @@ export const deleteNews = async (id) => {
 export const getRssSources = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
-    // 后端支持的参数：page, size 等
+    // 后端支持的参数：page, limit, category, is_active
     Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== '') {
-            // 将前端的 pageSize 映射为后端的 size
-            const backendKey = key === 'pageSize' ? 'size' : key;
+            // 将前端的 pageSize 映射为后端的 limit
+            const backendKey = key === 'pageSize' ? 'limit' : key;
             queryParams.append(backendKey, params[key]);
         }
     });
 
     const queryString = queryParams.toString();
-    const endpoint = `/rss-sources${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/rss${queryString ? `?${queryString}` : ''}`;
 
     return await apiRequest(endpoint);
 };
 
 export const createRssSource = async (sourceData) => {
-    return await apiRequest('/rss-sources', {
+    // 将前端字段映射为后端字段
+    const backendData = {
+        ...sourceData,
+        update_freq: sourceData.fetch_interval || 60
+    };
+    delete backendData.fetch_interval;
+
+    return await apiRequest('/rss', {
         method: 'POST',
-        body: JSON.stringify(sourceData)
+        body: JSON.stringify(backendData)
     });
 };
 
 export const updateRssSource = async (id, sourceData) => {
-    return await apiRequest(`/rss-sources/${id}`, {
+    // 将前端字段映射为后端字段
+    const backendData = {
+        ...sourceData,
+        update_freq: sourceData.fetch_interval
+    };
+    delete backendData.fetch_interval;
+
+    return await apiRequest(`/rss/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(sourceData)
+        body: JSON.stringify(backendData)
     });
 };
 
 export const deleteRssSource = async (id) => {
-    return await apiRequest(`/rss-sources/${id}`, {
+    return await apiRequest(`/rss/${id}`, {
         method: 'DELETE'
     });
 };
 
 export const fetchRssSource = async (id) => {
-    return await apiRequest(`/rss-sources/${id}/fetch`, {
+    return await apiRequest(`/rss/${id}/fetch`, {
         method: 'POST'
     });
 };
 
 export const fetchAllRssSources = async () => {
-    return await apiRequest('/rss-sources/fetch-all', {
+    return await apiRequest('/rss/fetch-all', {
         method: 'POST'
     });
+};
+
+export const getRssCategories = async () => {
+    return await apiRequest('/rss/categories');
+};
+
+export const getRssStats = async () => {
+    return await apiRequest('/rss/stats');
 };
 
 // ==================== 系统管理功能 ====================
@@ -366,6 +388,8 @@ export default {
     deleteRssSource,
     fetchRssSource,
     fetchAllRssSources,
+    getRssCategories,
+    getRssStats,
 
     // 事件管理
     getEvents,
