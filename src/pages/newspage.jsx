@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
+import AINewsSummary from "../components/AINewsSummary";
 import "./newspage.css";
 
 export default function NewsPage() {
@@ -505,6 +506,13 @@ export default function NewsPage() {
                 )}
               </div>
             </div>
+
+            {/* AI智能分析 */}
+            <AINewsSummary 
+              newsId={newsData.id} 
+              news={newsData}
+              isEvent={false}
+            />
 
             {/* 新闻内容 */}
             <div className="content-card">

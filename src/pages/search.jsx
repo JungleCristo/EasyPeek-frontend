@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
+import AISmartSearch from '../components/AISmartSearch';
+import AINewsSummary from '../components/AINewsSummary';
 import './search.css';
 
 const SearchPage = () => {
@@ -228,6 +230,25 @@ const SearchPage = () => {
     setCurrentPage(1);
   };
 
+  // 处理智能搜索
+  const handleSmartSearch = (searchParams) => {
+    console.log('智能搜索参数:', searchParams);
+    setSearchQuery(searchParams.query);
+    setCurrentPage(1);
+    
+    // 根据搜索模式处理不同的搜索逻辑
+    if (searchParams.mode === 'semantic') {
+      // 语义搜索逻辑 - 这里可以调用后端的语义搜索API
+      console.log('执行语义搜索:', searchParams);
+    } else if (searchParams.mode === 'keywords') {
+      // 关键词搜索逻辑
+      console.log('执行关键词搜索:', searchParams);
+    } else {
+      // 普通搜索逻辑
+      console.log('执行普通搜索:', searchParams);
+    }
+  };
+
   // 处理关键词点击
   const handleKeywordClick = (keyword) => {
     setSearchQuery(keyword);
@@ -257,26 +278,12 @@ const SearchPage = () => {
             <p className="search-subtitle">搜索感兴趣的新闻事件，追踪完整发展过程</p>
           </div>
 
-          {/* Search Bar */}
+          {/* AI Smart Search Bar */}
           <div className="search-bar-container">
-            <div className="search-bar-wrapper">
-              <div className="search-input-container">
-                <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="输入关键词搜索新闻事件..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
-              <button className="search-btn" onClick={handleSearch}>
-                搜索
-              </button>
-            </div>
+            <AISmartSearch 
+              onSearch={handleSmartSearch}
+              placeholder="智能搜索新闻事件..."
+            />
           </div>
 
           {/* Search Filters */}
@@ -405,6 +412,11 @@ const SearchPage = () => {
 
                     <h3 className="result-title">{result.title}</h3>
                     <p className="result-summary">{result.summary}</p>
+
+                    {/* AI总结组件 */}
+                    <div className="result-ai-summary">
+                      <AINewsSummary newsId={result.id} news={result} />
+                    </div>
 
                     <div className="result-footer">
                       <div className="result-stats">

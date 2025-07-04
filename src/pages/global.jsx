@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
+import AINewsSummary from '../components/AINewsSummary';
 import './global.css';
 
 const GlobalPage = () => {
@@ -326,6 +327,11 @@ const GlobalPage = () => {
             <span className="news-time">{news.published_at}</span>
             <span className="news-source">{news.source}</span>
           </div>
+          
+          {/* AI总结组件 */}
+          <div className="news-ai-summary">
+            <AINewsSummary newsId={news.id} news={news} />
+          </div>
         </div>
       ))}
     </div>
@@ -355,6 +361,11 @@ const GlobalPage = () => {
                 <span className="news-time">{news.published_at}</span>
                 <span className="news-source">{news.source}</span>
               </div>
+            </div>
+            
+            {/* AI总结组件 */}
+            <div className="list-ai-summary">
+              <AINewsSummary newsId={news.id} news={news} />
             </div>
           </div>
         </div>
@@ -418,6 +429,11 @@ const GlobalPage = () => {
                     <span className="news-time">{news.published_at}</span>
                     <span className="news-source">{news.source}</span>
                   </div>
+                </div>
+                
+                {/* AI总结组件 */}
+                <div className="timeline-ai-summary">
+                  <AINewsSummary newsId={news.id} news={news} />
                 </div>
               </div>
             </div>

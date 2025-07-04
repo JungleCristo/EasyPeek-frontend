@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import NewsCard from '../components/NewsCard';
+import AINewsSummary from '../components/AINewsSummary';
 import { eventConfig } from '../utils/statusConfig';
 import './RecommendPage.css';
 

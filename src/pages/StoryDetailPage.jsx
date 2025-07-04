@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
+import AINewsSummary from '../components/AINewsSummary';
 import './StoryDetailPage.css';
 
 const StoryDetailPage = () => {
@@ -331,6 +332,13 @@ const StoryDetailPage = () => {
               <h3>故事概要</h3>
               <p>{formattedStory.summary}</p>
             </div>
+            
+            {/* AI智能分析 - 分析整个事件 */}
+            <AINewsSummary 
+              newsId={formattedStory.id} 
+              news={formattedStory}
+              isEvent={true}
+            />
             
             <div className="story-stats-row">
               <div className="stat-item">

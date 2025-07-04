@@ -1,4 +1,5 @@
 import React from 'react';
+import AINewsSummary from './AINewsSummary';
 import './NewsCard.css';
 
 const NewsCard = ({ news, eventConfig, onNewsClick }) => {
@@ -68,6 +69,11 @@ const NewsCard = ({ news, eventConfig, onNewsClick }) => {
           </svg>
           {news.comment_count || 0}
         </span>
+      </div>
+      
+      {/* AI总结组件 */}
+      <div className="news-ai-summary">
+        <AINewsSummary newsId={news.id} news={news} />
       </div>
     </div>
   );
