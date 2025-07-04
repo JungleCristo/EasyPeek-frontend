@@ -2840,4 +2840,77 @@
       opacity: 0.5;
     }
   }
+
+  /* 点赞按钮样式 */
+  .news-stats .like-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 12px 16px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .news-stats .like-button:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    transform: scale(1.05);
+  }
+
+  .news-stats .like-button.liked {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .news-stats .like-button.liked .stat-icon {
+    color: #ef4444;
+    fill: #ef4444;
+  }
+
+  .news-stats .like-button:active {
+    transform: scale(0.95);
+  }
+
+  .news-stats .like-button.loading {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .news-stats .like-button.loading .stat-icon {
+    animation: likeButtonPulse 1.5s ease-in-out infinite;
+  }
+
+  body.dark .news-stats .like-button {
+    color: #9ca3af;
+  }
+
+  body.dark .news-stats .like-button:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+
+  body.dark .news-stats .like-button.liked {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  body.dark .news-stats .like-button.liked .stat-icon {
+    color: #f87171;
+    fill: #f87171;
+  }
+
+  @keyframes likeButtonPulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
   
