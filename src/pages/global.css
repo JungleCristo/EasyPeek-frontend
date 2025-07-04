@@ -1460,6 +1460,21 @@ body.dark .global-search-section .search-input:focus {
   }
 }
 
+/* AI总结组件样式 */
+.news-ai-summary,
+.list-ai-summary,
+.timeline-ai-summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.dark .news-ai-summary,
+body.dark .list-ai-summary,
+body.dark .timeline-ai-summary {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 @media (max-width: 480px) {
   .global-search-section .search-input {
     padding: 14px 16px;

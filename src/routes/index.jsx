@@ -12,6 +12,7 @@ import GlobalPage from '../pages/global';
 import RecommendPage from '../pages/RecommendPage';
 import ProfilePage from '../pages/user/profile';
 import SearchPage from '../pages/search';
+import AITestPage from '../pages/AITestPage';
 
 // Admin pages
 import AdminLogin from '../pages/admin/AdminLogin';
@@ -60,6 +61,10 @@ const router = createBrowserRouter([
   {
     path: '/search',
     element: <SearchPage />
+  },
+  {
+    path: '/ai-test',
+    element: <AITestPage />
   },
   {
     path: '/profile',

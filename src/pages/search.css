@@ -925,6 +925,13 @@ body.dark .loading-container p {
   }
 }
 
+/* AI总结组件样式 */
+.result-ai-summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
 @media (max-width: 480px) {
   .search-title {
     font-size: 2rem;

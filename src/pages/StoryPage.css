@@ -1047,6 +1047,17 @@ body.dark .pagination-ellipsis {
   }
 }
 
+/* AI总结组件样式 */
+.story-ai-summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+body.dark .story-ai-summary {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 @media (max-width: 480px) {
   .pagination-number {
     width: 35px;

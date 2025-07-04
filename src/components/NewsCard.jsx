@@ -1,4 +1,9 @@
+<<<<<<< HEAD
+import React from 'react';
+import AINewsSummary from './AINewsSummary';
+=======
 import React, { useState, useEffect } from 'react';
+>>>>>>> c6051a3a96f43d2bf647eb09541c2058a84845c2
 import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import { newsApi } from '../api/newsApi';
 import './NewsCard.css';
@@ -145,6 +150,11 @@ const NewsCard = ({ news, eventConfig, onNewsClick }) => {
           </svg>
           {news.share_count || 0}
         </span>
+      </div>
+      
+      {/* AI总结组件 */}
+      <div className="news-ai-summary">
+        <AINewsSummary newsId={news.id} news={news} />
       </div>
     </div>
   );

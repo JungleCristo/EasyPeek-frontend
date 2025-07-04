@@ -4,6 +4,7 @@ import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
 import NewsCard from "../components/NewsCard";
+import AINewsSummary from "../components/AINewsSummary";
 import { eventConfig, eventStatusConfig } from '../utils/statusConfig';
 import "./HomePage.css";
 
