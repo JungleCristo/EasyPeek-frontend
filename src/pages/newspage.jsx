@@ -33,6 +33,10 @@ export default function NewsPage() {
   // 点赞相关状态
   const [likedComments, setLikedComments] = useState(new Set()); // 存储已点赞的评论ID
   const [likedCommentsLoading, setLikedCommentsLoading] = useState(new Set()); // 存储正在点赞的评论ID
+  
+  // 回复相关状态
+  const [replyingTo, setReplyingTo] = useState(null); // 当前正在回复的评论ID
+  const [replyInput, setReplyInput] = useState(""); // 回复输入内容
 
   // 格式化新闻数据，处理字段映射
   const formatNewsData = (rawData) => {
@@ -208,7 +212,12 @@ export default function NewsPage() {
   const formatComments = (commentsList) => {
     return commentsList.map(comment => ({
       ...comment,
-      created_at: comment.created_at ? new Date(comment.created_at).toLocaleString('zh-CN') : ''
+      created_at: comment.created_at ? new Date(comment.created_at).toLocaleString('zh-CN') : '',
+      // 格式化回复数据
+      replies: comment.replies ? comment.replies.map(reply => ({
+        ...reply,
+        created_at: reply.created_at ? new Date(reply.created_at).toLocaleString('zh-CN') : ''
+      })) : []
     }));
   };
 
@@ -363,12 +372,28 @@ export default function NewsPage() {
           return newSet;
         });
 
-        // 更新评论列表中的点赞数
+        // 更新评论列表中的点赞数（包括回复）
         setComments(prev => prev.map(comment => {
           if (comment.id === commentId) {
             return {
               ...comment,
               like_count: isLiked ? comment.like_count - 1 : comment.like_count + 1
+            };
+          }
+          // 检查是否是回复的点赞
+          if (comment.replies) {
+            const updatedReplies = comment.replies.map(reply => {
+              if (reply.id === commentId) {
+                return {
+                  ...reply,
+                  like_count: isLiked ? reply.like_count - 1 : reply.like_count + 1
+                };
+              }
+              return reply;
+            });
+            return {
+              ...comment,
+              replies: updatedReplies
             };
           }
           return comment;
@@ -388,6 +413,63 @@ export default function NewsPage() {
         newSet.delete(commentId);
         return newSet;
       });
+    }
+  };
+
+  // 处理回复点击
+  const handleReplyClick = (commentId) => {
+    if (!currentUserId) {
+      alert('回复需要先登录哦');
+      return;
+    }
+    setReplyingTo(commentId);
+    setReplyInput('');
+  };
+
+  // 处理提交回复
+  const handleSubmitReply = async (commentId) => {
+    if (!replyInput.trim()) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('回复需要先登录哦');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const response = await fetch('http://localhost:8080/api/v1/comments/reply', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          news_id: parseInt(id),
+          parent_id: commentId,
+          content: replyInput.trim()
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.code === 200) {
+        // 回复成功，重新加载评论
+        setReplyInput('');
+        setReplyingTo(null);
+        setComments([]);
+        setCommentsPage(1);
+        fetchComments(id, 1, false);
+        alert('回复成功！');
+      } else {
+        alert(result.message || '回复失败');
+      }
+    } catch (error) {
+      console.error('回复失败:', error);
+      alert('网络错误，请稍后重试');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -756,6 +838,113 @@ export default function NewsPage() {
                           {comment.is_anonymous ? '未命名用户' : `用户 ${comment.user_id}`}
                         </div>
                         <div className="comment-text">{comment.content}</div>
+                        
+                        {/* 回复列表 */}
+                        {comment.replies && comment.replies.length > 0 && (
+                          <div className="replies-container">
+                            {comment.replies.map((reply) => (
+                              <div key={reply.id} className="reply-item">
+                                <div className={`reply-avatar ${reply.is_anonymous ? 'anonymous' : ''}`}>
+                                  {reply.is_anonymous ? '匿' : '用'}
+                                </div>
+                                <div className="reply-content">
+                                  <div className={`reply-author ${reply.is_anonymous ? 'anonymous' : ''}`}>
+                                    {reply.is_anonymous ? '未命名用户' : `用户 ${reply.user_id}`}
+                                  </div>
+                                  <div className="reply-text">{reply.content}</div>
+                                  <div className="reply-footer">
+                                    <div className="reply-time">{reply.created_at}</div>
+                                    <div className="reply-actions">
+                                      {/* 回复的点赞按钮 */}
+                                      <button
+                                        className={`reply-like-btn ${likedComments.has(reply.id) ? 'liked' : ''} ${likedCommentsLoading.has(reply.id) ? 'loading' : ''}`}
+                                        onClick={() => handleLikeComment(reply.id)}
+                                        disabled={likedCommentsLoading.has(reply.id)}
+                                      >
+                                        <svg 
+                                          className="like-icon" 
+                                          fill={likedComments.has(reply.id) ? "currentColor" : "none"} 
+                                          stroke="currentColor" 
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth={likedComments.has(reply.id) ? "0" : "2"} 
+                                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                                          />
+                                        </svg>
+                                        <span className="like-count">{reply.like_count || 0}</span>
+                                      </button>
+                                      
+                                      {/* 回复的删除按钮 */}
+                                      {!reply.is_anonymous && currentUserId === reply.user_id && (
+                                        <div className="reply-delete-actions">
+                                          <span
+                                            className="reply-action-dot"
+                                            onClick={() => {
+                                              setDeleteTargetId(reply.id);
+                                              setShowDeleteConfirm(true);
+                                            }}
+                                          >···</span>
+                                          {showDeleteConfirm && deleteTargetId === reply.id && (
+                                            <div className="reply-delete-confirm">
+                                              <span
+                                                className="reply-delete-btn"
+                                                onClick={() => {
+                                                  setShowDeleteConfirm(false);
+                                                  handleDeleteComment(reply.id);
+                                                }}
+                                              >删除</span>
+                                              <span
+                                                className="reply-cancel-btn"
+                                                onClick={() => setShowDeleteConfirm(false)}
+                                              >取消</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* 回复输入框 */}
+                        {replyingTo === comment.id && (
+                          <div className="reply-input-container">
+                            <input
+                              className="reply-input"
+                              placeholder="写下你的回复..."
+                              value={replyInput}
+                              onChange={e => setReplyInput(e.target.value)}
+                              maxLength={1000}
+                              disabled={submitting}
+                            />
+                            <div className="reply-actions">
+                              <button
+                                className="reply-submit-btn"
+                                onClick={() => handleSubmitReply(comment.id)}
+                                disabled={submitting || !replyInput.trim()}
+                              >
+                                回复
+                              </button>
+                              <button
+                                className="reply-cancel-btn"
+                                onClick={() => {
+                                  setReplyingTo(null);
+                                  setReplyInput('');
+                                }}
+                                disabled={submitting}
+                              >
+                                取消
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="comment-footer">
                           <div className="comment-time">{comment.created_at}</div>
                           <div className="comment-actions">
@@ -779,6 +968,14 @@ export default function NewsPage() {
                                 />
                               </svg>
                               <span className="like-count">{comment.like_count || 0}</span>
+                            </button>
+                            
+                            {/* 回复按钮 */}
+                            <button
+                              className="comment-reply-btn"
+                              onClick={() => handleReplyClick(comment.id)}
+                            >
+                              回复
                             </button>
                             
                             {/* 删除按钮，仅显示在自己评论右侧，匿名评论不能删除 */}
