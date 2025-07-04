@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import './search.css';
@@ -403,8 +404,8 @@ const SearchPage = () => {
                       </div>
                     </div>
 
-                    <h3 className="result-title">{result.title}</h3>
-                    <p className="result-summary">{result.summary}</p>
+                    <h3 className="result-title">{safeDisplayTitle(result.title)}</h3>
+                    <p className="result-summary">{safeDisplayText(result.summary, 200)}</p>
 
                     <div className="result-footer">
                       <div className="result-stats">

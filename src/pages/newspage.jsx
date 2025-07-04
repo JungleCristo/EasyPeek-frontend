@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { safeDisplayText, safeDisplayTitle, splitIntoParagraphs } from '../utils/htmlUtils';
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
 import "./newspage.css";
@@ -454,8 +455,8 @@ export default function NewsPage() {
                   )}
                 </div>
                 
-                <h1 className="news-title">{newsData.title}</h1>
-                <p className="news-summary">{newsData.summary}</p>
+                <h1 className="news-title">{safeDisplayTitle(newsData.title)}</h1>
+                <p className="news-summary">{safeDisplayText(newsData.summary, 300)}</p>
                 
                 <div className="news-meta">
                   <span className="news-time">{formatTime(newsData.published_at)}</span>
@@ -527,7 +528,7 @@ export default function NewsPage() {
                 )}
                 
                 <div className="news-content">
-                  {newsData.content && newsData.content.split('\n').map((paragraph, index) => {
+                  {newsData.content && splitIntoParagraphs(newsData.content).map((paragraph, index) => {
                     // 检查段落是否包含图片链接
                     const imageUrlRegex = /https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|svg)(\?[^\s]*)?/gi;
                     const imageUrls = paragraph.match(imageUrlRegex);
@@ -705,8 +706,8 @@ export default function NewsPage() {
                         <div className="related-news-category">{news.category}</div>
                         <span className="related-news-time">{news.published_at}</span>
                       </div>
-                      <h4 className="related-news-title">{news.title}</h4>
-                      <p className="related-news-summary">{news.summary}</p>
+                      <h4 className="related-news-title">{safeDisplayTitle(news.title)}</h4>
+                      <p className="related-news-summary">{safeDisplayText(news.summary, 100)}</p>
                       <div className="related-news-source">{news.source}</div>
                     </div>
                   ))
