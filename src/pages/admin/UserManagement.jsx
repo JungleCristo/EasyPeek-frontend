@@ -278,7 +278,7 @@ const UserManagement = () => {
             <div className="admin-content">
                 <div className="page-header">
                     <h1 className="page-title">用户管理</h1>
-                    <p className="page-subtitle">管理系统用户和权限设置</p>
+                    <p className="page-subtitle">平台用户管理和权限设置</p>
                 </div>
 
                 <div className="content-card">
@@ -287,12 +287,12 @@ const UserManagement = () => {
                             <h2>用户列表</h2>
                         </div>
                         <div className="header-right">
-                            <Space>
+                            <Space align="center" size="middle">
                                 <Search
-                                    placeholder="搜索用户名或邮箱"
+                                    placeholder=""
                                     allowClear
                                     onSearch={handleSearch}
-                                    style={{ width: 250 }}
+                                    style={{ width: 200 }}
                                     enterButton={<SearchOutlined />}
                                 />
                                 <Select

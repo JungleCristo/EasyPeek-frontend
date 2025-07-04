@@ -107,7 +107,7 @@ const router = createBrowserRouter([
     )
   },
   {
-    path: '/admin/rss-sources',
+    path: '/admin/rss',
     element: (
       <ProtectedRoute isAdmin={true}>
         <RSSManagement />
