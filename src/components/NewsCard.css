@@ -167,3 +167,55 @@
     align-self: flex-start;
   }
 }
+
+/* 点赞按钮样式 */
+.like-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.like-button:hover {
+  background: rgba(255, 107, 107, 0.1);
+  color: #ff6b6b;
+  transform: scale(1.05);
+}
+
+.like-button.liked {
+  color: #ff6b6b;
+}
+
+.like-button.liked .stat-icon {
+  color: #ff6b6b;
+  fill: #ff6b6b;
+}
+
+.like-button:active {
+  transform: scale(0.95);
+}
+
+.like-button.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.like-button.loading .stat-icon {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
