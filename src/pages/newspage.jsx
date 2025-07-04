@@ -31,7 +31,6 @@ export default function NewsPage() {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   // 点赞相关状态
-  const [likedComments, setLikedComments] = useState(new Set()); // 存储已点赞的评论ID
   const [likedCommentsLoading, setLikedCommentsLoading] = useState(new Set()); // 存储正在点赞的评论ID
   
   // 回复相关状态
@@ -218,10 +217,14 @@ export default function NewsPage() {
     return commentsList.map(comment => ({
       ...comment,
       created_at: comment.created_at ? new Date(comment.created_at).toLocaleString('zh-CN') : '',
+      // 确保保留 is_liked 字段
+      is_liked: comment.is_liked || false,
       // 格式化回复数据
       replies: comment.replies ? comment.replies.map(reply => ({
         ...reply,
-        created_at: reply.created_at ? new Date(reply.created_at).toLocaleString('zh-CN') : ''
+        created_at: reply.created_at ? new Date(reply.created_at).toLocaleString('zh-CN') : '',
+        // 确保回复也保留 is_liked 字段
+        is_liked: reply.is_liked || false
       })) : []
     }));
   };
@@ -233,13 +236,24 @@ export default function NewsPage() {
     try {
       const url = `http://localhost:8080/api/v1/comments/news/${newsId}?page=${page}&size=${COMMENTS_PAGE_SIZE}`;
       console.log(`请求URL: ${url}`);
-      const response = await fetch(url);
+      
+      // 获取token，如果有的话添加到请求头中
+      const token = localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(url, {
+        headers
+      });
       const result = await response.json();
       console.log(`API响应:`, result);
       
       if (result.code === 200 && Array.isArray(result.data)) {
         const formattedComments = formatComments(result.data);
         console.log(`格式化后的评论:`, formattedComments);
+
         // 使用后端返回的total字段
         setCommentsTotal(result.total || 0);
         setComments(formattedComments);
@@ -413,7 +427,35 @@ export default function NewsPage() {
       return;
     }
 
-    const isLiked = likedComments.has(commentId);
+    // 找到当前评论，获取其点赞状态
+    let targetComment = null;
+    let isLiked = false;
+    
+    // 在顶级评论中查找
+    for (const comment of comments) {
+      if (comment.id === commentId) {
+        targetComment = comment;
+        isLiked = comment.is_liked;
+        break;
+      }
+      // 在回复中查找
+      if (comment.replies) {
+        for (const reply of comment.replies) {
+          if (reply.id === commentId) {
+            targetComment = reply;
+            isLiked = reply.is_liked;
+            break;
+          }
+        }
+        if (targetComment) break;
+      }
+    }
+
+    if (!targetComment) {
+      console.error('未找到目标评论');
+      return;
+    }
+
     const endpoint = isLiked ? 'DELETE' : 'POST';
     
     // 添加调试信息
@@ -438,23 +480,13 @@ export default function NewsPage() {
       console.log(`响应数据:`, result);
       
       if (result.code === 200) {
-        // 更新点赞状态
-        setLikedComments(prev => {
-          const newSet = new Set(prev);
-          if (isLiked) {
-            newSet.delete(commentId);
-          } else {
-            newSet.add(commentId);
-          }
-          return newSet;
-        });
-
-        // 更新评论列表中的点赞数（包括回复）
+        // 更新评论列表中的点赞数和状态
         setComments(prev => prev.map(comment => {
           if (comment.id === commentId) {
             return {
               ...comment,
-              like_count: isLiked ? comment.like_count - 1 : comment.like_count + 1
+              like_count: result.data.like_count,
+              is_liked: result.data.is_liked
             };
           }
           // 检查是否是回复的点赞
@@ -463,7 +495,8 @@ export default function NewsPage() {
               if (reply.id === commentId) {
                 return {
                   ...reply,
-                  like_count: isLiked ? reply.like_count - 1 : reply.like_count + 1
+                  like_count: result.data.like_count,
+                  is_liked: result.data.is_liked
                 };
               }
               return reply;
@@ -934,20 +967,20 @@ export default function NewsPage() {
                                     <div className="reply-actions">
                                       {/* 回复的点赞按钮 */}
                                       <button
-                                        className={`reply-like-btn ${likedComments.has(reply.id) ? 'liked' : ''} ${likedCommentsLoading.has(reply.id) ? 'loading' : ''}`}
+                                        className={`reply-like-btn ${reply.is_liked ? 'liked' : ''} ${likedCommentsLoading.has(reply.id) ? 'loading' : ''}`}
                                         onClick={() => handleLikeComment(reply.id)}
                                         disabled={likedCommentsLoading.has(reply.id)}
                                       >
                                         <svg 
                                           className="like-icon" 
-                                          fill={likedComments.has(reply.id) ? "currentColor" : "none"} 
+                                          fill={reply.is_liked ? "currentColor" : "none"} 
                                           stroke="currentColor" 
                                           viewBox="0 0 24 24"
                                         >
                                           <path 
                                             strokeLinecap="round" 
                                             strokeLinejoin="round" 
-                                            strokeWidth={likedComments.has(reply.id) ? "0" : "2"} 
+                                            strokeWidth={reply.is_liked ? "0" : "2"} 
                                             d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
                                           />
                                         </svg>
@@ -1027,20 +1060,20 @@ export default function NewsPage() {
                           <div className="comment-actions">
                             {/* 点赞按钮 */}
                             <button
-                              className={`comment-like-btn ${likedComments.has(comment.id) ? 'liked' : ''} ${likedCommentsLoading.has(comment.id) ? 'loading' : ''}`}
+                              className={`comment-like-btn ${comment.is_liked ? 'liked' : ''} ${likedCommentsLoading.has(comment.id) ? 'loading' : ''}`}
                               onClick={() => handleLikeComment(comment.id)}
                               disabled={likedCommentsLoading.has(comment.id)}
                             >
                               <svg 
                                 className="like-icon" 
-                                fill={likedComments.has(comment.id) ? "currentColor" : "none"} 
+                                fill={comment.is_liked ? "currentColor" : "none"} 
                                 stroke="currentColor" 
                                 viewBox="0 0 24 24"
                               >
                                 <path 
                                   strokeLinecap="round" 
                                   strokeLinejoin="round" 
-                                  strokeWidth={likedComments.has(comment.id) ? "0" : "2"} 
+                                  strokeWidth={comment.is_liked ? "0" : "2"} 
                                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
                                 />
                               </svg>

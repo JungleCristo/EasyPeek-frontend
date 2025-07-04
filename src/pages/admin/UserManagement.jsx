@@ -275,7 +275,7 @@ const UserManagement = () => {
                         <div className="header-right">
                             <Space align="center" size="middle">
                                 <Search
-                                    placeholder=""
+                                    placeholder="输入用户名或者邮箱进行搜索"
                                     allowClear
                                     onSearch={handleSearch}
                                     className="admin-search-input"
