@@ -24,21 +24,21 @@ const apiRequest = async (endpoint, options = {}) => {
             ...options
         };
 
-        const response = await fetch(url, config);
-        const data = await response.json();
+        const Response = await fetch(url, config);
+        const response = await Response.json();
 
-        if (!response.ok) {
-            throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+        if (!Response.ok) {
+            throw new Error(response.error || response.message || `HTTP error! status: ${Response.status}`);
         }
 
-        return data;
+        return response;
     } catch (error) {
         console.error('API request failed:', error);
         throw error;
     }
 };
 
-// ==================== 认证相关 ====================
+// admin login
 export const adminLogin = async (credentials) => {
     try {
         const Response = await fetch(`${API_BASE_URL}/auth/admin-login`, {
@@ -58,7 +58,7 @@ export const adminLogin = async (credentials) => {
         // save token and user info to localStorage
         if (response.data && response.data.token) {
             localStorage.setItem('admin_token', response.data.token);
-            localStorage.setItem('admin_user', JSON.stringify(response.data.user));
+            localStorage.setItem('user_info', JSON.stringify(response.data.user));
         }
 
         return response;
@@ -68,6 +68,7 @@ export const adminLogin = async (credentials) => {
     }
 };
 
+// admin logout 
 export const adminLogout = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/admin-logout`, {
@@ -76,19 +77,19 @@ export const adminLogout = async () => {
         });
 
         if (!response.ok) {
-            console.warn('Logout API call failed with status:', response.status);
+            console.warn('Logout failed with status:', response.status);
         }
     } catch (error) {
-        console.warn('Logout API call failed:', error);
+        console.warn('Logout failed:', error);
     } finally {
         localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
+        localStorage.removeItem('user_info');
     }
 };
 
 export const checkAdminAuth = () => {
     const token = getAuthToken();
-    const user = localStorage.getItem('admin_user');
+    const user = localStorage.getItem('user_info');
 
     if (!token || !user) {
         return { isAuthenticated: false, user: null };
@@ -96,8 +97,7 @@ export const checkAdminAuth = () => {
 
     try {
         const userData = JSON.parse(user);
-        // 检查用户角色是否为管理员
-        const isAdmin = userData.role === 'admin' || userData.role === 'system';
+        const isAdmin = userData.role === 'admin';
 
         return {
             isAuthenticated: isAdmin,
@@ -111,7 +111,7 @@ export const checkAdminAuth = () => {
 
 export const getCurrentAdminUser = () => {
     try {
-        const user = localStorage.getItem('admin_user');
+        const user = localStorage.getItem('user_info');
         return user ? JSON.parse(user) : null;
     } catch (error) {
         console.error('Error getting current admin user:', error);
@@ -120,14 +120,20 @@ export const getCurrentAdminUser = () => {
 };
 
 
-
-
-// ==================== 系统统计 ====================
 export const getSystemStats = async () => {
     return await apiRequest('/stats');
 };
 
-// ==================== 用户管理 ====================
+
+// user management
+
+// 分页方式展示用户列表
+// 用户列表显示 用户id 头像 用户名 邮箱 角色 状态 创建时间 操作(编辑 删除)
+// 可以按照一定方式排序 筛选
+// 用户搜索 by username or email
+// 管理员创建用户
+
+// todo
 export const getUsers = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
@@ -150,13 +156,6 @@ export const getUserById = async (id) => {
     return await apiRequest(`/users/${id}`);
 };
 
-// 注意：后端没有提供创建用户的管理员接口，移除此函数
-// export const createUser = async (userData) => {
-//     return await apiRequest('/users', {
-//         method: 'POST',
-//         body: JSON.stringify(userData)
-//     });
-// };
 
 export const updateUser = async (id, userData) => {
     return await apiRequest(`/users/${id}`, {
@@ -249,81 +248,81 @@ export const deleteNews = async (id) => {
 export const getRssSources = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
-    // 后端支持的参数：page, size 等
+    // 后端支持的参数：page, limit, category, is_active
     Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== '') {
-            // 将前端的 pageSize 映射为后端的 size
-            const backendKey = key === 'pageSize' ? 'size' : key;
+            // 将前端的 pageSize 映射为后端的 limit
+            const backendKey = key === 'pageSize' ? 'limit' : key;
             queryParams.append(backendKey, params[key]);
         }
     });
 
     const queryString = queryParams.toString();
-    const endpoint = `/rss-sources${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/rss${queryString ? `?${queryString}` : ''}`;
 
     return await apiRequest(endpoint);
 };
 
 export const createRssSource = async (sourceData) => {
-    return await apiRequest('/rss-sources', {
+    // 将前端字段映射为后端字段
+    const backendData = {
+        ...sourceData,
+        update_freq: sourceData.fetch_interval || 60
+    };
+    delete backendData.fetch_interval;
+
+    return await apiRequest('/rss', {
         method: 'POST',
-        body: JSON.stringify(sourceData)
+        body: JSON.stringify(backendData)
     });
 };
 
 export const updateRssSource = async (id, sourceData) => {
-    return await apiRequest(`/rss-sources/${id}`, {
+    // 将前端字段映射为后端字段
+    const backendData = {
+        ...sourceData,
+        update_freq: sourceData.fetch_interval
+    };
+    delete backendData.fetch_interval;
+
+    return await apiRequest(`/rss/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(sourceData)
+        body: JSON.stringify(backendData)
     });
 };
 
 export const deleteRssSource = async (id) => {
-    return await apiRequest(`/rss-sources/${id}`, {
+    return await apiRequest(`/rss/${id}`, {
         method: 'DELETE'
     });
 };
 
 export const fetchRssSource = async (id) => {
-    return await apiRequest(`/rss-sources/${id}/fetch`, {
+    return await apiRequest(`/rss/${id}/fetch`, {
         method: 'POST'
     });
 };
 
 export const fetchAllRssSources = async () => {
-    return await apiRequest('/rss-sources/fetch-all', {
+    return await apiRequest('/rss/fetch-all', {
         method: 'POST'
     });
 };
 
-// ==================== 系统管理功能 ====================
-
-// 获取所有RSS源（管理员视图）- 与getRssSources功能相同，但为了语义清晰保留
-export const getAllRssSources = async (params = {}) => {
-    return await getRssSources(params);
+export const getRssCategories = async () => {
+    return await apiRequest('/rss/categories');
 };
 
-// 获取所有事件（管理员视图）- 与getEvents功能相同，但为了语义清晰保留
-export const getAllEvents = async (params = {}) => {
-    return await getEvents(params);
+export const getRssStats = async () => {
+    return await apiRequest('/rss/stats');
 };
 
-// 获取所有新闻（管理员视图）- 与getNews功能相同，但为了语义清晰保留
-export const getAllNews = async (params = {}) => {
-    return await getNews(params);
-};
-
-// 获取所有用户（管理员视图）- 与getUsers功能相同，但为了语义清晰保留
-export const getAllUsers = async (params = {}) => {
-    return await getUsers(params);
-};
 
 // ==================== 错误处理 ====================
 export const handleApiError = (error) => {
     console.error('API Error:', error);
 
     if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-        // Token过期或无效，跳转到登录页
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
         window.location.href = '/admin/login';
@@ -351,7 +350,6 @@ export default {
 
     // 用户管理
     getUsers,
-    getAllUsers,
     getUserById,
     // createUser, // 后端未提供此接口
     updateUser,
@@ -361,22 +359,21 @@ export default {
 
     // RSS源管理
     getRssSources,
-    getAllRssSources,
     createRssSource,
     updateRssSource,
     deleteRssSource,
     fetchRssSource,
     fetchAllRssSources,
+    getRssCategories,
+    getRssStats,
 
     // 事件管理
     getEvents,
-    getAllEvents,
     updateEvent,
     deleteEvent,
 
     // 新闻管理
     getNews,
-    getAllNews,
     updateNews,
     deleteNews,
 

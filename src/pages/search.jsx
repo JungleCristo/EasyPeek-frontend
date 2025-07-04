@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
+import { getCategoryNames, getCategoryConfig } from '../utils/statusConfig';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import AISmartSearch from '../components/AISmartSearch';
@@ -152,14 +154,13 @@ const SearchPage = () => {
     "电动汽车",
   ];
 
-  const categories = [
-    { name: "科技", count: 1234 },
-    { name: "政治", count: 856 },
-    { name: "经济", count: 1567 },
-    { name: "环境", count: 743 },
-    { name: "医疗", count: 892 },
-    { name: "教育", count: 456 },
-  ];
+  const categories = useMemo(() => {
+    const categoryNames = getCategoryNames();
+    return categoryNames.map(name => ({
+      name,
+      count: Math.floor(Math.random() * 1000) + 400 // 模拟数据
+    }));
+  }, []);
 
   // 筛选和排序搜索结果
   const filteredAndSortedResults = useMemo(() => {
@@ -167,15 +168,14 @@ const SearchPage = () => {
 
     // 按分类筛选
     if (selectedCategory !== 'all') {
-      const categoryMap = {
-        'tech': '科技',
-        'politics': '政治',
-        'economy': '经济',
-        'environment': '环境',
-        'health': '医疗',
-        'education': '教育'
-      };
-      filtered = filtered.filter(result => result.category === categoryMap[selectedCategory]);
+      const categoryNames = getCategoryNames();
+      const targetCategory = categoryNames.find(name => {
+        const config = getCategoryConfig(name);
+        return config.id === selectedCategory;
+      });
+      if (targetCategory) {
+        filtered = filtered.filter(result => result.category === targetCategory);
+      }
     }
 
     // 按搜索关键词筛选
@@ -302,12 +302,14 @@ const SearchPage = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">全部分类</option>
-                <option value="tech">科技</option>
-                <option value="politics">政治</option>
-                <option value="economy">经济</option>
-                <option value="environment">环境</option>
-                <option value="health">医疗</option>
-                <option value="education">教育</option>
+                {getCategoryNames().map(categoryName => {
+                  const config = getCategoryConfig(categoryName);
+                  return (
+                    <option key={config.id} value={config.id}>
+                      {config.name}
+                    </option>
+                  );
+                })}
               </select>
 
               <select
@@ -410,8 +412,8 @@ const SearchPage = () => {
                       </div>
                     </div>
 
-                    <h3 className="result-title">{result.title}</h3>
-                    <p className="result-summary">{result.summary}</p>
+                    <h3 className="result-title">{safeDisplayTitle(result.title)}</h3>
+                    <p className="result-summary">{safeDisplayText(result.summary, 200)}</p>
 
                     {/* AI总结组件 */}
                     <div className="result-ai-summary">

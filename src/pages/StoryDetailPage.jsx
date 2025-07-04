@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import AINewsSummary from '../components/AINewsSummary';
+import { addFollow, removeFollow, checkFollow, handleApiError } from '../api/userApi';
 import './StoryDetailPage.css';
 
 const StoryDetailPage = () => {
@@ -18,6 +20,22 @@ const StoryDetailPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [newsPerPage] = useState(5); // 每页显示5条新闻
   const [eventStats, setEventStats] = useState(null);
+  
+  // 关注功能相关状态
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // 通知状态
+  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+
+  // 显示通知
+  const showNotification = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 3000); // 3秒后自动隐藏
+  };
 
   // API调用函数
   const fetchEventDetail = async () => {
@@ -160,8 +178,8 @@ const StoryDetailPage = () => {
         date: publishedDate.toISOString().split('T')[0],
         time: publishedDate.toTimeString().slice(0, 5),
         type: type,
-        title: news.title,
-        summary: news.summary || news.description || (news.content ? news.content.substring(0, 150) + '...' : ''),
+        title: safeDisplayTitle(news.title),
+        summary: safeDisplayText(news.summary || news.description || news.content, 150),
         source: news.source,
         impact: impact,
         relatedNews: 1 // 每条新闻本身就是一条相关新闻
@@ -174,8 +192,29 @@ const StoryDetailPage = () => {
       fetchEventDetail();
       fetchEventNews();
       fetchEventStats();
+      checkFollowStatus(); // 检查关注状态
     }
   }, [id]);
+
+  // 监听登录状态变化 - 修复依赖问题
+  useEffect(() => {
+    checkLoginStatus();
+    // 可以监听storage变化来实时更新登录状态
+    const handleStorageChange = () => {
+      const wasLoggedIn = isLoggedIn;
+      const nowLoggedIn = checkLoginStatus();
+      if (wasLoggedIn !== nowLoggedIn) {
+        if (nowLoggedIn) {
+          checkFollowStatus(); // 如果刚登录，检查关注状态
+        } else {
+          setIsFollowing(false); // 如果退出登录，重置关注状态
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [id]); // 移除isLoggedIn依赖，只依赖id
 
   // 格式化新闻数据并进行筛选和排序
   const formattedNews = formatNewsData(newsTimeline);
@@ -236,6 +275,100 @@ const StoryDetailPage = () => {
       day: 'numeric'
     });
   };
+
+  // 检查用户登录状态
+  const checkLoginStatus = () => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+    return !!token;
+  };
+
+  // 检查是否已关注此事件 - 添加重试机制
+  const checkFollowStatus = async (retryCount = 0) => {
+    if (!checkLoginStatus()) {
+      setIsFollowing(false);
+      return;
+    }
+    
+    try {
+      const result = await checkFollow(parseInt(id));
+      setIsFollowing(result.is_following || false);
+    } catch (err) {
+      console.warn('检查关注状态失败:', err);
+      
+      // 如果是网络错误且重试次数少于3次，则重试
+      if (retryCount < 3 && !err.message.includes('认证失败')) {
+        setTimeout(() => {
+          checkFollowStatus(retryCount + 1);
+        }, 1000 * (retryCount + 1)); // 递增延迟
+      } else if (!err.message.includes('认证失败')) {
+        console.warn(handleApiError(err));
+      }
+    }
+  };
+
+  // 处理关注/取消关注 - 添加状态验证和409错误处理
+  const handleFollowToggle = async () => {
+    if (!isLoggedIn) {
+      showNotification('请先登录后再关注事件', 'warning');
+      return;
+    }
+
+    // 防止重复点击
+    if (followLoading) {
+      return;
+    }
+
+    setFollowLoading(true);
+    
+    try {
+      const previousState = isFollowing;
+      
+      if (isFollowing) {
+        await removeFollow(parseInt(id));
+        showNotification('已取消关注此事件', 'success');
+      } else {
+        await addFollow(parseInt(id));
+        showNotification('已关注此事件，您将收到相关更新通知', 'success');
+      }
+      
+      // 操作成功后重新检查状态，确保同步
+      setTimeout(() => {
+        checkFollowStatus();
+      }, 500); // 给后端一点时间处理
+      
+    } catch (err) {
+      console.error('关注操作失败:', err);
+      
+      // 特殊处理409冲突错误（已关注状态）
+      if (err.message.includes('Already following')) {
+        setIsFollowing(true);
+        showNotification('您已经关注了此事件', 'info');
+      } else {
+        const errorMessage = handleApiError(err);
+        showNotification(errorMessage, 'error');
+      }
+      
+      // 无论成功失败，都重新检查状态以确保一致性
+      setTimeout(() => {
+        checkFollowStatus();
+      }, 500);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  // 添加页面焦点时重新检查状态
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isLoggedIn && id) {
+        checkFollowStatus();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [id, isLoggedIn]);
 
   if (loading) {
     return (
@@ -318,6 +451,24 @@ const StoryDetailPage = () => {
                 <span className="story-importance" style={{color: getImpactColor(formattedStory.importance)}}>
                   重要性: {formattedStory.importance}
                 </span>
+                {/* 关注按钮 */}
+                <button 
+                  className={`follow-btn ${isFollowing ? 'following' : ''}`}
+                  onClick={handleFollowToggle}
+                  disabled={followLoading}
+                  title={isLoggedIn ? (isFollowing ? '取消关注' : '关注此事件') : '请先登录'}
+                >
+                  {followLoading ? '处理中...' : (
+                    <>
+                      <span className="follow-icon">
+                        {isFollowing ? '❤️' : '🤍'}
+                      </span>
+                      <span className="follow-text">
+                        {isFollowing ? '已关注' : '关注'}
+                      </span>
+                    </>
+                  )}
+                </button>
               </div>
               <div className="story-dates">
                 <span className="start-date">开始: {formatDate(formattedStory.startDate)}</span>
@@ -325,12 +476,12 @@ const StoryDetailPage = () => {
               </div>
             </div>
             
-            <h1 className="story-detail-title">{formattedStory.title}</h1>
-            <p className="story-detail-description">{formattedStory.description}</p>
+            <h1 className="story-detail-title">{safeDisplayTitle(formattedStory.title)}</h1>
+            <p className="story-detail-description">{safeDisplayText(formattedStory.description, 300)}</p>
             
             <div className="story-summary">
-              <h3>故事概要</h3>
-              <p>{formattedStory.summary}</p>
+              <h2>事件摘要</h2>
+              <p>{safeDisplayText(formattedStory.summary, 500)}</p>
             </div>
             
             {/* AI智能分析 - 分析整个事件 */}
@@ -377,7 +528,17 @@ const StoryDetailPage = () => {
         {/* 时间线控制 */}
         <div className="timeline-controls">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2>新闻时间线</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <h2>新闻时间线</h2>
+              {isLoggedIn && (
+                <div className="follow-status-indicator">
+                  <span className={`status-dot ${isFollowing ? 'following' : 'not-following'}`}></span>
+                  <span className="status-text">
+                    {isFollowing ? '已关注此事件' : '未关注'}
+                  </span>
+                </div>
+              )}
+            </div>
             <button 
               onClick={() => {
                 fetchEventNews();
@@ -573,6 +734,20 @@ const StoryDetailPage = () => {
       
       {/* 浮动按钮组 */}
       <ThemeToggle className="fixed" />
+      
+      {/* 通知组件 */}
+      {notification.show && (
+        <div className={`notification ${notification.type}`}>
+          <div className="notification-content">
+            <span className="notification-icon">
+              {notification.type === 'success' && '✅'}
+              {notification.type === 'error' && '❌'}
+              {notification.type === 'warning' && '⚠️'}
+            </span>
+            <span className="notification-message">{notification.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from "react-router-dom";
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
 import NewsCard from "../components/NewsCard";
@@ -186,8 +187,8 @@ export default function HomePage() {
               <h3 className="card-title">今日焦点</h3>
               {currentNews ? (
                 <div className="single-news-container" onClick={() => handleNewsClick(currentNews.id)}>
-                  <h4 className="single-news-title">{currentNews.title}</h4>
-                  <p className="single-news-summary">{currentNews.summary || currentNews.description}</p>
+                  <h4 className="single-news-title">{safeDisplayTitle(currentNews.title)}</h4>
+                  <p className="single-news-summary">{safeDisplayText(currentNews.summary || currentNews.description, 100)}</p>
                   <div className="single-news-meta">
                     <span className="single-news-time">{new Date(currentNews.published_at).toLocaleString()}</span>
                     <span className="single-news-source">{currentNews.source}</span>

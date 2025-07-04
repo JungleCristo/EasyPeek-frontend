@@ -4,7 +4,8 @@ import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import NewsCard from '../components/NewsCard';
 import AINewsSummary from '../components/AINewsSummary';
-import { eventConfig } from '../utils/statusConfig';
+import { eventConfig, getCategoryNames } from '../utils/statusConfig';
+
 import './RecommendPage.css';
 
 export default function RecommendPage() {
@@ -19,7 +20,7 @@ export default function RecommendPage() {
   const navigate = useNavigate();
 
   // 可选择的分类列表
-  const categories = ['all', '科技', '经济', '环境', '体育', '健康', '教育', '文化', '政治'];
+  const categories = ['all', ...getCategoryNames()];
 
   // 获取推荐理由
   const getRecommendationReason = (type, category) => {

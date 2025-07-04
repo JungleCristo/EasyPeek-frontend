@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
+import { getCategoryNames, getCategoryConfig } from '../utils/statusConfig';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import AINewsSummary from '../components/AINewsSummary';
@@ -21,20 +23,14 @@ export default function StoryPage() {
   const [totalStories, setTotalStories] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // 分类标签映射
-  const categoryLabels = {
-    'all': '全部',
-    '政治': '政治',
-    '经济': '经济',
-    '社会': '社会',
-    '科技': '科技',
-    '体育': '体育',
-    '娱乐': '娱乐',
-    '国际': '国际',
-    '军事': '军事',
-    '教育': '教育',
-    '健康': '健康'
-  };
+  // 分类标签映射（基于配置文件）
+  const categoryLabels = (() => {
+    const labels = { 'all': '全部' };
+    getCategoryNames().forEach(name => {
+      labels[name] = name;
+    });
+    return labels;
+  })();
 
   // API调用函数
   const fetchEvents = async () => {
@@ -129,19 +125,15 @@ export default function StoryPage() {
       tags = [];
     }
 
-    // 根据分类设置缩略图
-    const categoryThumbnails = {
-      '政治': '🏛️',
-      '经济': '📈',
-      '社会': '🏘️',
-      '科技': '🤖',
-      '体育': '🏅',
-      '娱乐': '🎬',
-      '国际': '🌍',
-      '军事': '🪖',
-      '教育': '📚',
-      '健康': '🏥'
-    };
+    // 根据分类设置缩略图（基于配置文件）
+    const categoryThumbnails = (() => {
+      const thumbnails = {};
+      getCategoryNames().forEach(name => {
+        const config = getCategoryConfig(name);
+        thumbnails[name] = config.icon;
+      });
+      return thumbnails;
+    })();
 
     // 简单的重要性评估
     const getImportance = (hotnessScore, viewCount) => {
@@ -351,10 +343,10 @@ export default function StoryPage() {
                 </div>
 
                 <h3 className="story-title">
-                        {story.title}
+                        {safeDisplayTitle(story.title)}
                 </h3>
                 
-                <p className="story-description">{story.description}</p>
+                <p className="story-description">{safeDisplayText(story.description, 200)}</p>
                 
                 <div className="story-stats">
                   <span className="news-count">📰 {story.newsCount} 条新闻</span>

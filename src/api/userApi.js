@@ -72,6 +72,18 @@ export const getUnreadCount = async () => {
   return await apiRequest('/messages/unread-count');
 };
 
+// 获取关注事件的最新新闻
+export const getFollowedEventsLatestNews = async (params = {}) => {
+  const { limit = 20 } = params;
+  return await apiRequest(`/messages/followed-events-news?limit=${limit}`);
+};
+
+// 获取关注事件的最近新闻（用于个人中心通知）
+export const getFollowedEventsRecentNews = async (params = {}) => {
+  const { hours = 24, create_notifications = false } = params;
+  return await apiRequest(`/messages/followed-events-recent-news?hours=${hours}&create_notifications=${create_notifications}`);
+};
+
 // 标记消息已读
 export const markMessageRead = async (messageId) => {
   return await apiRequest(`/messages/${messageId}/read`, {
