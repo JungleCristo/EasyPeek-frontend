@@ -32,12 +32,16 @@ export default function NewsPage() {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   // 点赞相关状态
-  const [likedComments, setLikedComments] = useState(new Set()); // 存储已点赞的评论ID
   const [likedCommentsLoading, setLikedCommentsLoading] = useState(new Set()); // 存储正在点赞的评论ID
   
   // 回复相关状态
   const [replyingTo, setReplyingTo] = useState(null); // 当前正在回复的评论ID
   const [replyInput, setReplyInput] = useState(""); // 回复输入内容
+
+  // 分页相关计算
+  const totalPages = Math.ceil(commentsTotal / COMMENTS_PAGE_SIZE);
+  const hasNextPage = commentsPage < totalPages;
+  const hasPrevPage = commentsPage > 1;
 
   // 格式化新闻数据，处理字段映射
   const formatNewsData = (rawData) => {
@@ -214,34 +218,54 @@ export default function NewsPage() {
     return commentsList.map(comment => ({
       ...comment,
       created_at: comment.created_at ? new Date(comment.created_at).toLocaleString('zh-CN') : '',
+      // 确保保留 is_liked 字段
+      is_liked: comment.is_liked || false,
       // 格式化回复数据
       replies: comment.replies ? comment.replies.map(reply => ({
         ...reply,
-        created_at: reply.created_at ? new Date(reply.created_at).toLocaleString('zh-CN') : ''
+        created_at: reply.created_at ? new Date(reply.created_at).toLocaleString('zh-CN') : '',
+        // 确保回复也保留 is_liked 字段
+        is_liked: reply.is_liked || false
       })) : []
     }));
   };
 
-  // 获取新闻评论，支持分页和追加
-  const fetchComments = async (newsId, page = 1, append = false) => {
+  // 获取新闻评论，支持分页
+  const fetchComments = async (newsId, page = 1) => {
+    console.log(`fetchComments: newsId=${newsId}, page=${page}`);
     setCommentsLoading(true);
     try {
       const url = `http://localhost:8080/api/v1/comments/news/${newsId}?page=${page}&size=${COMMENTS_PAGE_SIZE}`;
-      const response = await fetch(url);
+      console.log(`请求URL: ${url}`);
+      
+      // 获取token，如果有的话添加到请求头中
+      const token = localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(url, {
+        headers
+      });
       const result = await response.json();
+      console.log(`API响应:`, result);
+      
       if (result.code === 200 && Array.isArray(result.data)) {
         const formattedComments = formatComments(result.data);
+        console.log(`格式化后的评论:`, formattedComments);
+
+        // 使用后端返回的total字段
         setCommentsTotal(result.total || 0);
-        if (append) {
-          setComments(prev => [...prev, ...formattedComments]);
-        } else {
-          setComments(formattedComments);
-        }
+        setComments(formattedComments);
+        console.log(`设置评论: 新评论数=${formattedComments.length}`);
       } else {
+        console.log(`API返回错误或数据格式不正确:`, result);
         setComments([]);
         setCommentsTotal(0);
       }
-    } catch (_) {
+    } catch (error) {
+      console.error('获取评论失败:', error);
       setComments([]);
       setCommentsTotal(0);
     } finally {
@@ -285,7 +309,7 @@ export default function NewsPage() {
         setCommentInput('');
         setComments([]);
         setCommentsPage(1);
-        fetchComments(id, 1, false);
+        fetchComments(id, 1);
       } else {
         alert(result.message || '评论失败');
       }
@@ -308,7 +332,7 @@ export default function NewsPage() {
       if (result.code === 200) {
         setComments([]);
         setCommentsPage(1);
-        fetchComments(id, 1, false);
+        fetchComments(id, 1);
       } else {
         alert(result.message || '删除失败');
       }
@@ -317,11 +341,78 @@ export default function NewsPage() {
     }
   };
 
-  // 加载更多评论
-  const handleLoadMoreComments = () => {
-    const nextPage = commentsPage + 1;
-    setCommentsPage(nextPage);
-    fetchComments(id, nextPage, true);
+  // 分页导航函数
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      console.log(`切换到第${newPage}页`);
+      setCommentsPage(newPage);
+      fetchComments(id, newPage);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (hasPrevPage) {
+      handlePageChange(commentsPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (hasNextPage) {
+      handlePageChange(commentsPage + 1);
+    }
+  };
+
+  // 生成页码数组
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5; // 最多显示5个页码
+    
+    if (totalPages <= maxVisiblePages) {
+      // 如果总页数不多，显示所有页码
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // 如果总页数很多，显示当前页附近的页码
+      let start = Math.max(1, commentsPage - Math.floor(maxVisiblePages / 2));
+      let end = Math.min(totalPages, start + maxVisiblePages - 1);
+      
+      // 调整起始位置，确保显示maxVisiblePages个页码
+      if (end - start + 1 < maxVisiblePages) {
+        start = Math.max(1, end - maxVisiblePages + 1);
+      }
+      
+      // 添加第一页（如果不是连续的）
+      if (start > 1) {
+        pages.push(1);
+        if (start > 2) {
+          pages.push('...'); // 省略号
+        }
+      }
+      
+      // 添加中间页码
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      // 添加最后一页（如果不是连续的）
+      if (end < totalPages) {
+        if (end < totalPages - 1) {
+          pages.push('...'); // 省略号
+        }
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const handleFirstPage = () => {
+    handlePageChange(1);
+  };
+
+  const handleLastPage = () => {
+    handlePageChange(totalPages);
   };
 
   // 处理评论点赞
@@ -337,7 +428,35 @@ export default function NewsPage() {
       return;
     }
 
-    const isLiked = likedComments.has(commentId);
+    // 找到当前评论，获取其点赞状态
+    let targetComment = null;
+    let isLiked = false;
+    
+    // 在顶级评论中查找
+    for (const comment of comments) {
+      if (comment.id === commentId) {
+        targetComment = comment;
+        isLiked = comment.is_liked;
+        break;
+      }
+      // 在回复中查找
+      if (comment.replies) {
+        for (const reply of comment.replies) {
+          if (reply.id === commentId) {
+            targetComment = reply;
+            isLiked = reply.is_liked;
+            break;
+          }
+        }
+        if (targetComment) break;
+      }
+    }
+
+    if (!targetComment) {
+      console.error('未找到目标评论');
+      return;
+    }
+
     const endpoint = isLiked ? 'DELETE' : 'POST';
     
     // 添加调试信息
@@ -362,23 +481,13 @@ export default function NewsPage() {
       console.log(`响应数据:`, result);
       
       if (result.code === 200) {
-        // 更新点赞状态
-        setLikedComments(prev => {
-          const newSet = new Set(prev);
-          if (isLiked) {
-            newSet.delete(commentId);
-          } else {
-            newSet.add(commentId);
-          }
-          return newSet;
-        });
-
-        // 更新评论列表中的点赞数（包括回复）
+        // 更新评论列表中的点赞数和状态
         setComments(prev => prev.map(comment => {
           if (comment.id === commentId) {
             return {
               ...comment,
-              like_count: isLiked ? comment.like_count - 1 : comment.like_count + 1
+              like_count: result.data.like_count,
+              is_liked: result.data.is_liked
             };
           }
           // 检查是否是回复的点赞
@@ -387,7 +496,8 @@ export default function NewsPage() {
               if (reply.id === commentId) {
                 return {
                   ...reply,
-                  like_count: isLiked ? reply.like_count - 1 : reply.like_count + 1
+                  like_count: result.data.like_count,
+                  is_liked: result.data.is_liked
                 };
               }
               return reply;
@@ -461,7 +571,7 @@ export default function NewsPage() {
         setReplyingTo(null);
         setComments([]);
         setCommentsPage(1);
-        fetchComments(id, 1, false);
+        fetchComments(id, 1);
         alert('回复成功！');
       } else {
         alert(result.message || '回复失败');
@@ -478,7 +588,7 @@ export default function NewsPage() {
   useEffect(() => {
     setComments([]);
     setCommentsPage(1);
-    fetchComments(id, 1, false);
+    fetchComments(id, 1);
   }, [id]);
 
   // 加载状态
@@ -843,7 +953,7 @@ export default function NewsPage() {
                       </div>
                       <div className="comment-content">
                         <div className={`comment-author ${comment.is_anonymous ? 'anonymous' : ''}`}>
-                          {comment.is_anonymous ? '未命名用户' : `用户 ${comment.user_id}`}
+                          {comment.is_anonymous ? '未命名用户' : (comment.username || `用户 ${comment.user_id}`)}
                         </div>
                         <div className="comment-text">{comment.content}</div>
                         
@@ -857,7 +967,7 @@ export default function NewsPage() {
                                 </div>
                                 <div className="reply-content">
                                   <div className={`reply-author ${reply.is_anonymous ? 'anonymous' : ''}`}>
-                                    {reply.is_anonymous ? '未命名用户' : `用户 ${reply.user_id}`}
+                                    {reply.is_anonymous ? '未命名用户' : (reply.username || `用户 ${reply.user_id}`)}
                                   </div>
                                   <div className="reply-text">{reply.content}</div>
                                   <div className="reply-footer">
@@ -865,20 +975,20 @@ export default function NewsPage() {
                                     <div className="reply-actions">
                                       {/* 回复的点赞按钮 */}
                                       <button
-                                        className={`reply-like-btn ${likedComments.has(reply.id) ? 'liked' : ''} ${likedCommentsLoading.has(reply.id) ? 'loading' : ''}`}
+                                        className={`reply-like-btn ${reply.is_liked ? 'liked' : ''} ${likedCommentsLoading.has(reply.id) ? 'loading' : ''}`}
                                         onClick={() => handleLikeComment(reply.id)}
                                         disabled={likedCommentsLoading.has(reply.id)}
                                       >
                                         <svg 
                                           className="like-icon" 
-                                          fill={likedComments.has(reply.id) ? "currentColor" : "none"} 
+                                          fill={reply.is_liked ? "currentColor" : "none"} 
                                           stroke="currentColor" 
                                           viewBox="0 0 24 24"
                                         >
                                           <path 
                                             strokeLinecap="round" 
                                             strokeLinejoin="round" 
-                                            strokeWidth={likedComments.has(reply.id) ? "0" : "2"} 
+                                            strokeWidth={reply.is_liked ? "0" : "2"} 
                                             d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
                                           />
                                         </svg>
@@ -958,20 +1068,20 @@ export default function NewsPage() {
                           <div className="comment-actions">
                             {/* 点赞按钮 */}
                             <button
-                              className={`comment-like-btn ${likedComments.has(comment.id) ? 'liked' : ''} ${likedCommentsLoading.has(comment.id) ? 'loading' : ''}`}
+                              className={`comment-like-btn ${comment.is_liked ? 'liked' : ''} ${likedCommentsLoading.has(comment.id) ? 'loading' : ''}`}
                               onClick={() => handleLikeComment(comment.id)}
                               disabled={likedCommentsLoading.has(comment.id)}
                             >
                               <svg 
                                 className="like-icon" 
-                                fill={likedComments.has(comment.id) ? "currentColor" : "none"} 
+                                fill={comment.is_liked ? "currentColor" : "none"} 
                                 stroke="currentColor" 
                                 viewBox="0 0 24 24"
                               >
                                 <path 
                                   strokeLinecap="round" 
                                   strokeLinejoin="round" 
-                                  strokeWidth={likedComments.has(comment.id) ? "0" : "2"} 
+                                  strokeWidth={comment.is_liked ? "0" : "2"} 
                                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
                                 />
                               </svg>
@@ -1022,10 +1132,80 @@ export default function NewsPage() {
                   <div className="no-comments"><p>暂无评论</p></div>
                 )}
               </div>
-              {comments.length < commentsTotal && (
-                <button className="view-all-comments-btn" onClick={handleLoadMoreComments}>
-                  查看更多评论
-                </button>
+              {/* 分页组件 */}
+              {totalPages > 1 && (
+                <div className="comments-pagination">
+                  <div className="pagination-info">
+                    第 {commentsPage} 页，共 {totalPages} 页 ({commentsTotal} 条评论)
+                    {commentsLoading && <span className="loading-indicator"> 加载中...</span>}
+                  </div>
+                  <div className="pagination-controls">
+                    {/* 第一页按钮 */}
+                    <button
+                      className={`pagination-btn first-btn ${commentsPage === 1 ? 'disabled' : ''}`}
+                      onClick={handleFirstPage}
+                      disabled={commentsPage === 1}
+                      title="第一页"
+                    >
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    
+                    {/* 上一页按钮 */}
+                    <button
+                      className={`pagination-btn prev-btn ${!hasPrevPage ? 'disabled' : ''}`}
+                      onClick={handlePrevPage}
+                      disabled={!hasPrevPage}
+                    >
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      上一页
+                    </button>
+                    
+                    {/* 页码按钮 */}
+                    <div className="page-numbers">
+                      {getPageNumbers().map((pageNum, index) => (
+                        pageNum === '...' ? (
+                          <span key={`ellipsis-${index}`} className="page-ellipsis">...</span>
+                        ) : (
+                          <button
+                            key={pageNum}
+                            className={`page-number ${pageNum === commentsPage ? 'active' : ''}`}
+                            onClick={() => handlePageChange(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        )
+                      ))}
+                    </div>
+                    
+                    {/* 下一页按钮 */}
+                    <button
+                      className={`pagination-btn next-btn ${!hasNextPage ? 'disabled' : ''}`}
+                      onClick={handleNextPage}
+                      disabled={!hasNextPage}
+                    >
+                      下一页
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    
+                    {/* 最后一页按钮 */}
+                    <button
+                      className={`pagination-btn last-btn ${commentsPage === totalPages ? 'disabled' : ''}`}
+                      onClick={handleLastPage}
+                      disabled={commentsPage === totalPages}
+                      title="最后一页"
+                    >
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7m-8-7l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

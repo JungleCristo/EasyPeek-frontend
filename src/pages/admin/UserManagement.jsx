@@ -159,7 +159,7 @@ const UserManagement = () => {
     const getStatusTag = (status) => {
         const statusConfig = {
             active: { color: 'green', text: '活跃' },
-            inactive: { color: 'orange', text: '非活跃' },
+            inactive: { color: 'orange', text: '已注销' },
             suspended: { color: 'red', text: '已封禁' }
         };
         const config = statusConfig[status] || { color: 'default', text: status };
@@ -275,11 +275,11 @@ const UserManagement = () => {
                         <div className="header-right">
                             <Space align="center" size="middle">
                                 <Search
-                                    placeholder=""
+                                    placeholder="输入用户名或者邮箱进行搜索"
                                     allowClear
                                     onSearch={handleSearch}
-                                    style={{ width: 200 }}
-                                    enterButton={<SearchOutlined />}
+                                    className="admin-search-input"
+                                    enterButton={<SearchOutlined style={{ fontSize: 18 }} />}
                                 />
                                 <Select
                                     placeholder="角色筛选"
@@ -298,7 +298,7 @@ const UserManagement = () => {
                                     onChange={(value) => handleFilterChange('status', value)}
                                 >
                                     <Option value="active">活跃</Option>
-                                    <Option value="inactive">非活跃</Option>
+                                    <Option value="deleted">已注销</Option>
                                     <Option value="suspended">已封禁</Option>
                                 </Select>
                                 <Button
@@ -399,7 +399,7 @@ const UserManagement = () => {
                     >
                         <Select placeholder="请选择状态">
                             <Option value="active">活跃</Option>
-                            <Option value="inactive">非活跃</Option>
+                            <Option value="deleted">已删除</Option>
                             <Option value="suspended">已封禁</Option>
                         </Select>
                     </Form.Item>
@@ -426,4 +426,4 @@ const UserManagement = () => {
     );
 };
 
-export default UserManagement; 
+export default UserManagement;

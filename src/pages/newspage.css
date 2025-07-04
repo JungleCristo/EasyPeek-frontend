@@ -1719,7 +1719,7 @@
       min-width: 120px;
     }
   }
-
+  
   /* 评论输入框样式 */
   .comment-input-row {
     display: flex;
@@ -2170,6 +2170,9 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    white-space: nowrap;
+    min-width: 60px;
+    text-align: center;
   }
 
   .reply-submit-btn {
@@ -2189,14 +2192,15 @@
   }
 
   .reply-cancel-btn {
-    background: transparent;
+    background: #f3f4f6;
     color: #6b7280;
     border: 1px solid #e5e7eb;
   }
 
   .reply-cancel-btn:hover:not(:disabled) {
-    background: #f9fafb;
+    background: #e5e7eb;
     color: #374151;
+    border-color: #d1d5db;
   }
 
   body.dark .reply-submit-btn {
@@ -2208,13 +2212,15 @@
   }
 
   body.dark .reply-cancel-btn {
+    background: #374151;
     color: #9ca3af;
-    border-color: #374151;
+    border-color: #4b5563;
   }
 
   body.dark .reply-cancel-btn:hover:not(:disabled) {
-    background: #374151;
+    background: #4b5563;
     color: #f9fafb;
+    border-color: #6b7280;
   }
 
   /* 回复列表样式 */
@@ -2541,6 +2547,297 @@
     .reply-submit-btn,
     .reply-cancel-btn {
       width: 100%;
+    }
+  }
+
+  /* 分页组件样式 */
+  .comments-pagination {
+    margin-top: 24px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  body.dark .comments-pagination {
+    background: rgba(30, 30, 46, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .pagination-info {
+    text-align: center;
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 16px;
+  }
+
+  body.dark .pagination-info {
+    color: #9ca3af;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 80px;
+    justify-content: center;
+  }
+
+  .pagination-btn.first-btn,
+  .pagination-btn.last-btn {
+    min-width: 40px;
+    padding: 8px;
+  }
+
+  .pagination-btn.first-btn .pagination-icon,
+  .pagination-btn.last-btn .pagination-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
+  }
+
+  .pagination-btn:disabled {
+    background: #f9fafb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  body.dark .pagination-btn {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  body.dark .pagination-btn:hover:not(:disabled) {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  body.dark .pagination-btn:disabled {
+    background: #1f2937;
+    color: #6b7280;
+  }
+
+  .pagination-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .page-numbers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .page-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .page-number:hover:not(.active) {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
+  }
+
+  .page-number.active {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: white;
+  }
+
+  .page-number.active:hover {
+    background: #4338ca;
+    border-color: #4338ca;
+  }
+
+  body.dark .page-number {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  body.dark .page-number:hover:not(.active) {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+
+  body.dark .page-number.active {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+  }
+
+  body.dark .page-number.active:hover {
+    background: #7c3aed;
+    border-color: #7c3aed;
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .pagination-controls {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .page-numbers {
+      order: 2;
+    }
+
+    .pagination-btn {
+      min-width: 120px;
+    }
+
+    .page-number {
+      width: 32px;
+      height: 32px;
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .comments-pagination {
+      padding: 12px;
+    }
+
+    .pagination-info {
+      font-size: 13px;
+    }
+
+    .pagination-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      min-width: 100px;
+    }
+
+    .page-number {
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
+    }
+  }
+
+  .page-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  body.dark .page-ellipsis {
+    color: #9ca3af;
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .pagination-controls {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .page-numbers {
+      order: 2;
+    }
+
+    .pagination-btn {
+      min-width: 120px;
+    }
+
+    .page-number {
+      width: 32px;
+      height: 32px;
+      font-size: 13px;
+    }
+
+    .page-ellipsis {
+      width: 32px;
+      height: 32px;
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .comments-pagination {
+      padding: 12px;
+    }
+
+    .pagination-info {
+      font-size: 13px;
+    }
+
+    .pagination-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      min-width: 100px;
+    }
+
+    .page-number {
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
+    }
+
+    .page-ellipsis {
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
+    }
+  }
+
+  .loading-indicator {
+    color: #4f46e5;
+    font-weight: 500;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  body.dark .loading-indicator {
+    color: #8b5cf6;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
     }
   }
   
