@@ -38,6 +38,11 @@ export default function NewsPage() {
   const [replyingTo, setReplyingTo] = useState(null); // 当前正在回复的评论ID
   const [replyInput, setReplyInput] = useState(""); // 回复输入内容
 
+  // 分页相关计算
+  const totalPages = Math.ceil(commentsTotal / COMMENTS_PAGE_SIZE);
+  const hasNextPage = commentsPage < totalPages;
+  const hasPrevPage = commentsPage > 1;
+
   // 格式化新闻数据，处理字段映射
   const formatNewsData = (rawData) => {
     if (!rawData) return null;
@@ -221,26 +226,31 @@ export default function NewsPage() {
     }));
   };
 
-  // 获取新闻评论，支持分页和追加
-  const fetchComments = async (newsId, page = 1, append = false) => {
+  // 获取新闻评论，支持分页
+  const fetchComments = async (newsId, page = 1) => {
+    console.log(`fetchComments: newsId=${newsId}, page=${page}`);
     setCommentsLoading(true);
     try {
       const url = `http://localhost:8080/api/v1/comments/news/${newsId}?page=${page}&size=${COMMENTS_PAGE_SIZE}`;
+      console.log(`请求URL: ${url}`);
       const response = await fetch(url);
       const result = await response.json();
+      console.log(`API响应:`, result);
+      
       if (result.code === 200 && Array.isArray(result.data)) {
         const formattedComments = formatComments(result.data);
+        console.log(`格式化后的评论:`, formattedComments);
+        // 使用后端返回的total字段
         setCommentsTotal(result.total || 0);
-        if (append) {
-          setComments(prev => [...prev, ...formattedComments]);
-        } else {
-          setComments(formattedComments);
-        }
+        setComments(formattedComments);
+        console.log(`设置评论: 新评论数=${formattedComments.length}`);
       } else {
+        console.log(`API返回错误或数据格式不正确:`, result);
         setComments([]);
         setCommentsTotal(0);
       }
-    } catch (_) {
+    } catch (error) {
+      console.error('获取评论失败:', error);
       setComments([]);
       setCommentsTotal(0);
     } finally {
@@ -284,7 +294,7 @@ export default function NewsPage() {
         setCommentInput('');
         setComments([]);
         setCommentsPage(1);
-        fetchComments(id, 1, false);
+        fetchComments(id, 1);
       } else {
         alert(result.message || '评论失败');
       }
@@ -307,7 +317,7 @@ export default function NewsPage() {
       if (result.code === 200) {
         setComments([]);
         setCommentsPage(1);
-        fetchComments(id, 1, false);
+        fetchComments(id, 1);
       } else {
         alert(result.message || '删除失败');
       }
@@ -316,11 +326,78 @@ export default function NewsPage() {
     }
   };
 
-  // 加载更多评论
-  const handleLoadMoreComments = () => {
-    const nextPage = commentsPage + 1;
-    setCommentsPage(nextPage);
-    fetchComments(id, nextPage, true);
+  // 分页导航函数
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      console.log(`切换到第${newPage}页`);
+      setCommentsPage(newPage);
+      fetchComments(id, newPage);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (hasPrevPage) {
+      handlePageChange(commentsPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (hasNextPage) {
+      handlePageChange(commentsPage + 1);
+    }
+  };
+
+  // 生成页码数组
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5; // 最多显示5个页码
+    
+    if (totalPages <= maxVisiblePages) {
+      // 如果总页数不多，显示所有页码
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // 如果总页数很多，显示当前页附近的页码
+      let start = Math.max(1, commentsPage - Math.floor(maxVisiblePages / 2));
+      let end = Math.min(totalPages, start + maxVisiblePages - 1);
+      
+      // 调整起始位置，确保显示maxVisiblePages个页码
+      if (end - start + 1 < maxVisiblePages) {
+        start = Math.max(1, end - maxVisiblePages + 1);
+      }
+      
+      // 添加第一页（如果不是连续的）
+      if (start > 1) {
+        pages.push(1);
+        if (start > 2) {
+          pages.push('...'); // 省略号
+        }
+      }
+      
+      // 添加中间页码
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      // 添加最后一页（如果不是连续的）
+      if (end < totalPages) {
+        if (end < totalPages - 1) {
+          pages.push('...'); // 省略号
+        }
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const handleFirstPage = () => {
+    handlePageChange(1);
+  };
+
+  const handleLastPage = () => {
+    handlePageChange(totalPages);
   };
 
   // 处理评论点赞
@@ -460,7 +537,7 @@ export default function NewsPage() {
         setReplyingTo(null);
         setComments([]);
         setCommentsPage(1);
-        fetchComments(id, 1, false);
+        fetchComments(id, 1);
         alert('回复成功！');
       } else {
         alert(result.message || '回复失败');
@@ -477,7 +554,7 @@ export default function NewsPage() {
   useEffect(() => {
     setComments([]);
     setCommentsPage(1);
-    fetchComments(id, 1, false);
+    fetchComments(id, 1);
   }, [id]);
 
   // 加载状态
@@ -835,7 +912,7 @@ export default function NewsPage() {
                       </div>
                       <div className="comment-content">
                         <div className={`comment-author ${comment.is_anonymous ? 'anonymous' : ''}`}>
-                          {comment.is_anonymous ? '未命名用户' : `用户 ${comment.user_id}`}
+                          {comment.is_anonymous ? '未命名用户' : (comment.username || `用户 ${comment.user_id}`)}
                         </div>
                         <div className="comment-text">{comment.content}</div>
                         
@@ -849,7 +926,7 @@ export default function NewsPage() {
                                 </div>
                                 <div className="reply-content">
                                   <div className={`reply-author ${reply.is_anonymous ? 'anonymous' : ''}`}>
-                                    {reply.is_anonymous ? '未命名用户' : `用户 ${reply.user_id}`}
+                                    {reply.is_anonymous ? '未命名用户' : (reply.username || `用户 ${reply.user_id}`)}
                                   </div>
                                   <div className="reply-text">{reply.content}</div>
                                   <div className="reply-footer">
@@ -1014,10 +1091,80 @@ export default function NewsPage() {
                   <div className="no-comments"><p>暂无评论</p></div>
                 )}
               </div>
-              {comments.length < commentsTotal && (
-                <button className="view-all-comments-btn" onClick={handleLoadMoreComments}>
-                  查看更多评论
-                </button>
+              {/* 分页组件 */}
+              {totalPages > 1 && (
+                <div className="comments-pagination">
+                  <div className="pagination-info">
+                    第 {commentsPage} 页，共 {totalPages} 页 ({commentsTotal} 条评论)
+                    {commentsLoading && <span className="loading-indicator"> 加载中...</span>}
+                  </div>
+                  <div className="pagination-controls">
+                    {/* 第一页按钮 */}
+                    <button
+                      className={`pagination-btn first-btn ${commentsPage === 1 ? 'disabled' : ''}`}
+                      onClick={handleFirstPage}
+                      disabled={commentsPage === 1}
+                      title="第一页"
+                    >
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    
+                    {/* 上一页按钮 */}
+                    <button
+                      className={`pagination-btn prev-btn ${!hasPrevPage ? 'disabled' : ''}`}
+                      onClick={handlePrevPage}
+                      disabled={!hasPrevPage}
+                    >
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      上一页
+                    </button>
+                    
+                    {/* 页码按钮 */}
+                    <div className="page-numbers">
+                      {getPageNumbers().map((pageNum, index) => (
+                        pageNum === '...' ? (
+                          <span key={`ellipsis-${index}`} className="page-ellipsis">...</span>
+                        ) : (
+                          <button
+                            key={pageNum}
+                            className={`page-number ${pageNum === commentsPage ? 'active' : ''}`}
+                            onClick={() => handlePageChange(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        )
+                      ))}
+                    </div>
+                    
+                    {/* 下一页按钮 */}
+                    <button
+                      className={`pagination-btn next-btn ${!hasNextPage ? 'disabled' : ''}`}
+                      onClick={handleNextPage}
+                      disabled={!hasNextPage}
+                    >
+                      下一页
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    
+                    {/* 最后一页按钮 */}
+                    <button
+                      className={`pagination-btn last-btn ${commentsPage === totalPages ? 'disabled' : ''}`}
+                      onClick={handleLastPage}
+                      disabled={commentsPage === totalPages}
+                      title="最后一页"
+                    >
+                      <svg className="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7m-8-7l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
