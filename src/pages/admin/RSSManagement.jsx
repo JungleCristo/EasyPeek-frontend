@@ -76,7 +76,7 @@ const RSSManagement = () => {
             url: source.url,
             description: source.description,
             category: source.category,
-            fetch_interval: source.fetch_interval,
+            fetch_interval: source.fetch_interval || source.update_freq, // 兼容后端字段名
             is_active: source.is_active
         });
         setEditModalVisible(true);
