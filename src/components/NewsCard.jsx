@@ -1,5 +1,5 @@
 import React from 'react';
-import { safeDisplayText } from '../utils/htmlUtils';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import './NewsCard.css';
 
 const NewsCard = ({ news, eventConfig, onNewsClick }) => {
@@ -41,7 +41,7 @@ const NewsCard = ({ news, eventConfig, onNewsClick }) => {
           </div>
         )}
       </div>
-      <h3 className="news-title">{safeDisplayText(news.title)}</h3>
+      <h3 className="news-title">{safeDisplayTitle(news.title)}</h3>
       <p className="news-summary">{safeDisplayText(news.summary, 150)}</p>
       <div className="news-meta">
         <span className="news-time">{formatTime(news.published_at)}</span>

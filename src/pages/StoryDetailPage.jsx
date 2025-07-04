@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { safeDisplayText } from '../utils/htmlUtils';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import { addFollow, removeFollow, checkFollow, handleApiError } from '../api/userApi';
@@ -177,7 +177,7 @@ const StoryDetailPage = () => {
         date: publishedDate.toISOString().split('T')[0],
         time: publishedDate.toTimeString().slice(0, 5),
         type: type,
-        title: safeDisplayText(news.title),
+        title: safeDisplayTitle(news.title),
         summary: safeDisplayText(news.summary || news.description || news.content, 150),
         source: news.source,
         impact: impact,
@@ -475,7 +475,7 @@ const StoryDetailPage = () => {
               </div>
             </div>
             
-            <h1 className="story-detail-title">{safeDisplayText(formattedStory.title)}</h1>
+            <h1 className="story-detail-title">{safeDisplayTitle(formattedStory.title)}</h1>
             <p className="story-detail-description">{safeDisplayText(formattedStory.description, 300)}</p>
             
             <div className="story-summary">

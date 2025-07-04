@@ -39,6 +39,35 @@ export const decodeHtmlEntities = (str) => {
 };
 
 /**
+ * 清理新闻标题格式，去除"0x版xx - "这种前缀
+ * @param {string} title - 原始标题
+ * @returns {string} 清理后的标题
+ */
+export const cleanNewsTitle = (title) => {
+  if (!title || typeof title !== 'string') {
+    return '';
+  }
+
+  // 去除"0x版xx - "格式的前缀
+  // 匹配模式：数字 + 版 + 任意字符 + 空格 + - + 空格
+  const titlePrefixPattern = /^\d+版[^-]*-\s*/;
+  let cleanTitle = title.replace(titlePrefixPattern, '');
+  
+  // 去除其他可能的版面格式
+  // 匹配模式：任意字符 + 版 + 任意字符 + - + 空格
+  const generalPrefixPattern = /^[^-]*版[^-]*-\s*/;
+  cleanTitle = cleanTitle.replace(generalPrefixPattern, '');
+  
+  // 去除开头的"- "
+  cleanTitle = cleanTitle.replace(/^-\s*/, '');
+  
+  // 清理多余的空白字符
+  cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
+  
+  return cleanTitle || title; // 如果清理后为空，返回原标题
+};
+
+/**
  * 综合清理HTML内容：去除标签 + 解码实体 + 清理空白
  * @param {string} htmlContent - 原始HTML内容
  * @param {number} maxLength - 最大长度（可选）
@@ -104,4 +133,35 @@ export const splitIntoParagraphs = (content) => {
  */
 export const safeDisplayText = (content, maxLength = null) => {
   return cleanHtmlContent(content, maxLength);
+};
+
+/**
+ * 安全地显示新闻标题（去除HTML标签并清理标题格式）
+ * @param {string} title - 原始标题
+ * @param {number} maxLength - 最大显示长度
+ * @returns {string} 清理后的标题
+ */
+export const safeDisplayTitle = (title, maxLength = null) => {
+  if (!title) return '';
+  
+  // 首先清理HTML标签
+  let cleanTitle = cleanHtmlContent(title);
+  
+  // 然后清理标题格式
+  cleanTitle = cleanNewsTitle(cleanTitle);
+  
+  // 如果指定了最大长度，进行截取
+  if (maxLength && cleanTitle.length > maxLength) {
+    cleanTitle = cleanTitle.substring(0, maxLength);
+    
+    // 尝试在单词边界截断
+    const lastSpace = cleanTitle.lastIndexOf(' ');
+    if (lastSpace > maxLength * 0.8) {
+      cleanTitle = cleanTitle.substring(0, lastSpace);
+    }
+    
+    cleanTitle = cleanTitle.trim() + '...';
+  }
+  
+  return cleanTitle;
 }; 

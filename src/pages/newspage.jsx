@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { safeDisplayText, splitIntoParagraphs } from '../utils/htmlUtils';
+import { safeDisplayText, safeDisplayTitle, splitIntoParagraphs } from '../utils/htmlUtils';
 import Header from "../components/Header";
 import ThemeToggle from "../components/ThemeToggle";
 import "./newspage.css";
@@ -455,7 +455,7 @@ export default function NewsPage() {
                   )}
                 </div>
                 
-                <h1 className="news-title">{safeDisplayText(newsData.title)}</h1>
+                <h1 className="news-title">{safeDisplayTitle(newsData.title)}</h1>
                 <p className="news-summary">{safeDisplayText(newsData.summary, 300)}</p>
                 
                 <div className="news-meta">
@@ -706,7 +706,7 @@ export default function NewsPage() {
                         <div className="related-news-category">{news.category}</div>
                         <span className="related-news-time">{news.published_at}</span>
                       </div>
-                      <h4 className="related-news-title">{safeDisplayText(news.title)}</h4>
+                      <h4 className="related-news-title">{safeDisplayTitle(news.title)}</h4>
                       <p className="related-news-summary">{safeDisplayText(news.summary, 100)}</p>
                       <div className="related-news-source">{news.source}</div>
                     </div>

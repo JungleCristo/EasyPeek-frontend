@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { safeDisplayText } from '../utils/htmlUtils';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import './global.css';
@@ -321,7 +321,7 @@ const GlobalPage = () => {
               {eventConfig[news.belonged_event]?.label}
             </div>
           </div>
-          <h3 className="news-title">{safeDisplayText(news.title)}</h3>
+          <h3 className="news-title">{safeDisplayTitle(news.title)}</h3>
           <p className="news-summary">{safeDisplayText(news.summary, 150)}</p>
           <div className="news-meta">
             <span className="news-time">{news.published_at}</span>
@@ -349,7 +349,7 @@ const GlobalPage = () => {
                 {eventConfig[news.belonged_event]?.label}
               </div>
             </div>
-            <h3 className="list-title">{safeDisplayText(news.title)}</h3>
+            <h3 className="list-title">{safeDisplayTitle(news.title)}</h3>
             <p className="list-summary">{safeDisplayText(news.summary, 150)}</p>
             <div className="list-meta">
               <div className="news-meta">
@@ -412,7 +412,7 @@ const GlobalPage = () => {
                     {eventConfig[news.belonged_event]?.label}
                   </div>
                 </div>
-                <h4 className="timeline-title">{safeDisplayText(news.title)}</h4>
+                <h4 className="timeline-title">{safeDisplayTitle(news.title)}</h4>
                 <p className="timeline-summary">{safeDisplayText(news.summary, 100)}</p>
                 <div className="timeline-meta">
                   <div className="news-meta">

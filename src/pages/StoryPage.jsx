@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { safeDisplayText } from '../utils/htmlUtils';
+import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
 import { getStatusColor, getStatusText, getImportanceColor } from '../utils/statusConfig';
@@ -351,7 +351,7 @@ export default function StoryPage() {
                 </div>
 
                 <h3 className="story-title">
-                        {safeDisplayText(story.title)}
+                        {safeDisplayTitle(story.title)}
                 </h3>
                 
                 <p className="story-description">{safeDisplayText(story.description, 200)}</p>
