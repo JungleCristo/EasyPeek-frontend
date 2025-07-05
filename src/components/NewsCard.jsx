@@ -1,9 +1,8 @@
-<<<<<<< HEAD
-import React from 'react';
+
 import AINewsSummary from './AINewsSummary';
-=======
+
 import React, { useState, useEffect } from 'react';
->>>>>>> c6051a3a96f43d2bf647eb09541c2058a84845c2
+
 import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import { newsApi } from '../api/newsApi';
 import './NewsCard.css';
