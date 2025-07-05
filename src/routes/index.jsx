@@ -18,6 +18,8 @@ import AdminLogin from '../pages/admin/AdminLogin';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import UserManagement from '../pages/admin/UserManagement';
 import RSSManagement from '../pages/admin/RSSManagement';
+import NewsManagement from '../pages/admin/NewsManagement';
+import EventManagement from '../pages/admin/EventManagement';
 
 
 const router = createBrowserRouter([
@@ -94,7 +96,7 @@ const router = createBrowserRouter([
     path: '/admin/events',
     element: (
       <ProtectedRoute isAdmin={true}>
-        <AdminDashboard />
+        <EventManagement />
       </ProtectedRoute>
     )
   },
@@ -102,7 +104,7 @@ const router = createBrowserRouter([
     path: '/admin/news',
     element: (
       <ProtectedRoute isAdmin={true}>
-        <AdminDashboard />
+        <NewsManagement />
       </ProtectedRoute>
     )
   },

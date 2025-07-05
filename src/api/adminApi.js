@@ -170,14 +170,14 @@ export const deleteUser = async (id) => {
 };
 
 // ==================== 事件管理 ====================
-export const getEvents = async (params = {}) => {
+export const getAllEvents = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
-    // 后端支持的过滤参数：page, size, status, category, created_by, search
+    // 后端支持的过滤参数：page, limit, status, category, created_by, search, sort_by
     Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== '') {
-            // 将前端的 pageSize 映射为后端的 size
-            const backendKey = key === 'pageSize' ? 'size' : key;
+            // 将前端的 pageSize 映射为后端的 limit
+            const backendKey = key === 'pageSize' ? 'limit' : key;
             queryParams.append(backendKey, params[key]);
         }
     });
@@ -186,6 +186,17 @@ export const getEvents = async (params = {}) => {
     const endpoint = `/events${queryString ? `?${queryString}` : ''}`;
 
     return await apiRequest(endpoint);
+};
+
+export const getEvents = async (params = {}) => {
+    return await getAllEvents(params);
+};
+
+export const createEvent = async (eventData) => {
+    return await apiRequest('/events', {
+        method: 'POST',
+        body: JSON.stringify(eventData)
+    });
 };
 
 export const updateEvent = async (id, eventData) => {
@@ -202,7 +213,7 @@ export const deleteEvent = async (id) => {
 };
 
 // ==================== 新闻管理 ====================
-export const getNews = async (params = {}) => {
+export const getAllNews = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
     // 后端支持的过滤参数：page, size, status, category, source_type, search
@@ -218,6 +229,17 @@ export const getNews = async (params = {}) => {
     const endpoint = `/news${queryString ? `?${queryString}` : ''}`;
 
     return await apiRequest(endpoint);
+};
+
+export const getNews = async (params = {}) => {
+    return await getAllNews(params);
+};
+
+export const createNews = async (newsData) => {
+    return await apiRequest('/news', {
+        method: 'POST',
+        body: JSON.stringify(newsData)
+    });
 };
 
 export const updateNews = async (id, newsData) => {
@@ -355,12 +377,16 @@ export default {
     getRssStats,
 
     // 事件管理
+    getAllEvents,
     getEvents,
+    createEvent,
     updateEvent,
     deleteEvent,
 
     // 新闻管理
+    getAllNews,
     getNews,
+    createNews,
     updateNews,
     deleteNews,
 
