@@ -156,7 +156,6 @@ export const getUserById = async (id) => {
     return await apiRequest(`/users/${id}`);
 };
 
-
 export const updateUser = async (id, userData) => {
     return await apiRequest(`/users/${id}`, {
         method: 'PUT',
@@ -170,25 +169,15 @@ export const deleteUser = async (id) => {
     });
 };
 
-// 注意：后端的用户更新统一使用 PUT /users/:id，不再有单独的角色和状态更新接口
-// 保留这些函数以维持兼容性，但内部调用统一的更新接口
-export const updateUserRole = async (id, role) => {
-    return await updateUser(id, { role });
-};
-
-export const updateUserStatus = async (id, status) => {
-    return await updateUser(id, { status });
-};
-
 // ==================== 事件管理 ====================
-export const getEvents = async (params = {}) => {
+export const getAllEvents = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
-    // 后端支持的过滤参数：page, size, status, category, created_by, search
+    // 后端支持的过滤参数：page, limit, status, category, created_by, search, sort_by
     Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== '') {
-            // 将前端的 pageSize 映射为后端的 size
-            const backendKey = key === 'pageSize' ? 'size' : key;
+            // 将前端的 pageSize 映射为后端的 limit
+            const backendKey = key === 'pageSize' ? 'limit' : key;
             queryParams.append(backendKey, params[key]);
         }
     });
@@ -197,6 +186,17 @@ export const getEvents = async (params = {}) => {
     const endpoint = `/events${queryString ? `?${queryString}` : ''}`;
 
     return await apiRequest(endpoint);
+};
+
+export const getEvents = async (params = {}) => {
+    return await getAllEvents(params);
+};
+
+export const createEvent = async (eventData) => {
+    return await apiRequest('/events', {
+        method: 'POST',
+        body: JSON.stringify(eventData)
+    });
 };
 
 export const updateEvent = async (id, eventData) => {
@@ -213,7 +213,7 @@ export const deleteEvent = async (id) => {
 };
 
 // ==================== 新闻管理 ====================
-export const getNews = async (params = {}) => {
+export const getAllNews = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
     // 后端支持的过滤参数：page, size, status, category, source_type, search
@@ -231,6 +231,17 @@ export const getNews = async (params = {}) => {
     return await apiRequest(endpoint);
 };
 
+export const getNews = async (params = {}) => {
+    return await getAllNews(params);
+};
+
+export const createNews = async (newsData) => {
+    return await apiRequest('/news', {
+        method: 'POST',
+        body: JSON.stringify(newsData)
+    });
+};
+
 export const updateNews = async (id, newsData) => {
     return await apiRequest(`/news/${id}`, {
         method: 'PUT',
@@ -244,11 +255,11 @@ export const deleteNews = async (id) => {
     });
 };
 
-// ==================== RSS源管理 ====================
+// RSS Management
 export const getRssSources = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
-    // 后端支持的参数：page, limit, category, is_active
+    // 后端支持的参数：page, limit
     Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== '') {
             // 将前端的 pageSize 映射为后端的 limit
@@ -354,8 +365,6 @@ export default {
     // createUser, // 后端未提供此接口
     updateUser,
     deleteUser,
-    updateUserRole,
-    updateUserStatus,
 
     // RSS源管理
     getRssSources,
@@ -368,12 +377,16 @@ export default {
     getRssStats,
 
     // 事件管理
+    getAllEvents,
     getEvents,
+    createEvent,
     updateEvent,
     deleteEvent,
 
     // 新闻管理
+    getAllNews,
     getNews,
+    createNews,
     updateNews,
     deleteNews,
 

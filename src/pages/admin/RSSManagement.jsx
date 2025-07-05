@@ -44,16 +44,15 @@ const RSSManagement = () => {
             };
             const response = await getRssSources(params);
             if (response.code === 200 && response.data) {
-                setRssSources(response.data.rss_sources);
+                setRssSources(response.data);
                 setPagination(prev => ({
                     ...prev,
-                    total: response.data.total || 0
+                    total: response.total || 0
                 }));
             } else {
                 message.error(response.message || '获取RSS源列表失败');
             }
         } catch (error) {
-            console.error('获取RSS源列表失败:', error);
             if (error.response) {
                 if (error.response.status === 401) {
                     message.error('认证已过期，请重新登录');
