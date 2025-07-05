@@ -4,6 +4,7 @@ import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import { getCategoryNames, getCategoryConfig } from '../utils/statusConfig';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
+import AINewsSummary from '../components/AINewsSummary';
 import { getStatusColor, getStatusText, getImportanceColor } from '../utils/statusConfig';
 import './StoryPage.css';
 
@@ -358,8 +359,13 @@ export default function StoryPage() {
                   {story.tags.map(tag => (
                     <span key={tag} className="story-tag">#{tag}</span>
                   ))}
-                      </div>
                 </div>
+                
+                {/* AI总结组件 */}
+                <div className="story-ai-summary">
+                  <AINewsSummary newsId={story.id} news={story} isEvent={true} />
+                </div>
+              </div>
 
                     {/* 右侧：时间线 */}
                     <div className="story-timeline-right">
