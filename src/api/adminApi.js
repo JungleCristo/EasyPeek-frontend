@@ -156,7 +156,6 @@ export const getUserById = async (id) => {
     return await apiRequest(`/users/${id}`);
 };
 
-
 export const updateUser = async (id, userData) => {
     return await apiRequest(`/users/${id}`, {
         method: 'PUT',
@@ -168,16 +167,6 @@ export const deleteUser = async (id) => {
     return await apiRequest(`/users/${id}`, {
         method: 'DELETE'
     });
-};
-
-// 注意：后端的用户更新统一使用 PUT /users/:id，不再有单独的角色和状态更新接口
-// 保留这些函数以维持兼容性，但内部调用统一的更新接口
-export const updateUserRole = async (id, role) => {
-    return await updateUser(id, { role });
-};
-
-export const updateUserStatus = async (id, status) => {
-    return await updateUser(id, { status });
 };
 
 // ==================== 事件管理 ====================
@@ -244,11 +233,11 @@ export const deleteNews = async (id) => {
     });
 };
 
-// ==================== RSS源管理 ====================
+// RSS Management
 export const getRssSources = async (params = {}) => {
     const queryParams = new URLSearchParams();
 
-    // 后端支持的参数：page, limit, category, is_active
+    // 后端支持的参数：page, limit
     Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== '') {
             // 将前端的 pageSize 映射为后端的 limit
@@ -354,8 +343,6 @@ export default {
     // createUser, // 后端未提供此接口
     updateUser,
     deleteUser,
-    updateUserRole,
-    updateUserStatus,
 
     // RSS源管理
     getRssSources,
