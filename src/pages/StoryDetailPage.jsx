@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { safeDisplayText, safeDisplayTitle } from '../utils/htmlUtils';
 import Header from '../components/Header';
 import ThemeToggle from '../components/ThemeToggle';
+import AINewsSummary from '../components/AINewsSummary';
 import { addFollow, removeFollow, checkFollow, handleApiError } from '../api/userApi';
 import './StoryDetailPage.css';
 
@@ -482,6 +483,13 @@ const StoryDetailPage = () => {
               <h2>事件摘要</h2>
               <p>{safeDisplayText(formattedStory.summary, 500)}</p>
             </div>
+            
+            {/* AI智能分析 - 分析整个事件 */}
+            <AINewsSummary 
+              newsId={formattedStory.id} 
+              news={formattedStory}
+              isEvent={true}
+            />
             
             <div className="story-stats-row">
               <div className="stat-item">
